@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Sync - 2FA Manager</title>
+  <link rel="stylesheet" href="options.css">
+  <style>
+    .cloud-page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .cloud-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .cloud-header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .cloud-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .setup-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .setup-card h2 {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .help-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-left: auto;
+    }
+
+    .help-button:hover {
+      background: #1976D2;
+    }
+
+    .client-id-input {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+    }
+
+    .sync-status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #999;
+    }
+
+    .sync-status-indicator.connected {
+      background: var(--primary);
+    }
+
+    .sync-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .sync-info {
+      background: rgba(33, 150, 243, 0.1);
+      border-left: 3px solid var(--secondary);
+      padding: 16px;
+      margin-top: 16px;
+      border-radius: var(--radius-sm);
+    }
+
+    .sync-info-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--secondary);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      margin-bottom: 24px;
+      padding: 8px 0;
+    }
+
+    .back-link:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="cloud-page">
+    <a href="options.html" class="back-link">
+      ← Back to Settings
+    </a>
+
+    <div class="cloud-header">
+      <div class="cloud-icon">☁️</div>
+      <h1>Cloud Sync Setup</h1>
+      <p class="description">
+        Backup your encrypted vault to Google Drive and sync across devices
+      </p>
+    </div>
+
+    <!-- Step 1: OAuth Configuration -->
+    <div class="setup-card">
+      <h2>
+        <span class="step-number">1</span>
+        Configure Google OAuth
+        <button class="help-button" id="show-setup-guide">
+          📘 Setup Guide
+        </button>
+      </h2>
+
+      <p class="description" style="margin-bottom: 16px;">
+        Enter your Google OAuth Client ID. Don't have one? Click "Setup Guide" for instructions.
+      </p>
+
+      <div class="form-group">
+        <label for="client-id-input">OAuth Client ID</label>
+        <input
+          type="text"
+          id="client-id-input"
+          class="client-id-input"
+          placeholder="123456789-abcdefg.apps.googleusercontent.com"
+        >
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
+        <button class="btn btn-primary" id="save-client-id-btn">
+          Save Client ID
+        </button>
+        <button class="btn btn-secondary" id="clear-client-id-btn">
+          Clear
+        </button>
+      </div>
+
+      <div class="sync-info">
+        <div class="sync-info-title">🔒 Security Note</div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">
+          Your Client ID is stored locally and used only for authentication.
+          Your vault remains encrypted end-to-end.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 2: Connect Account -->
+    <div class="setup-card">
+      <h2>
+        <span class="step-number">2</span>
+        Connect Google Account
+      </h2>
+
+      <div class="sync-status" id="connection-status">
+        <span class="sync-status-indicator" id="status-indicator"></span>
+        <div>
+          <div id="status-text">Not Connected</div>
+          <div id="status-email" style="font-size: 0.9rem; color: var(--text-secondary);"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="connect-btn" disabled>
+        Connect Google Account
+      </button>
+      <button class="btn btn-secondary hidden" id="disconnect-btn">
+        Disconnect
+      </button>
+    </div>
+
+    <!-- Step 3: Sync Actions -->
+    <div class="setup-card">
+      <h2>
+        <span class="step-number">3</span>
+        Backup & Sync
+      </h2>
+
+      <div class="sync-actions">
+        <div>
+          <button class="btn btn-secondary" id="upload-btn" disabled>
+            ⬆️ Upload Vault
+          </button>
+          <div id="upload-timestamp" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
+            Never uploaded
+          </div>
+        </div>
+
+        <div>
+          <button class="btn btn-secondary" id="download-btn" disabled>
+            ⬇️ Download Vault
+          </button>
+          <div id="download-timestamp" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
+            Never downloaded
+          </div>
+        </div>
+      </div>
+
+      <div class="sync-info" style="margin-top: 16px;">
+        <div class="sync-info-title">💡 How It Works</div>
+        <ul style="font-size: 0.9rem; color: var(--text-secondary); margin: 8px 0 0 20px;">
+          <li>Upload: Backs up your encrypted vault to Google Drive</li>
+          <li>Download: Restores vault from Google Drive to this device</li>
+          <li>Your master password encrypts all data before upload</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup Guide Modal -->
+  <div id="setup-guide-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>📘 Google OAuth Setup Guide</h2>
+        <button class="close-modal" id="close-setup-guide">×</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <h3>Step-by-Step Instructions</h3>
+
+        <div class="guide-step">
+          <h4>1. Create Google Cloud Project</h4>
+          <ol>
+            <li>Go to <a href="https://console.cloud.google.com/" target="_blank" class="link">Google Cloud Console</a></li>
+            <li>Click "Select a Project" → "New Project"</li>
+            <li>Project name: <code>2FA Manager</code></li>
+            <li>Click "Create"</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>2. Enable Google Drive API</h4>
+          <ol>
+            <li>In your project, go to "APIs & Services" → "Library"</li>
+            <li>Search for "Google Drive API"</li>
+            <li>Click on it → Click "Enable"</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>3. Configure OAuth Consent Screen</h4>
+          <ol>
+            <li>Go to "APIs & Services" → "OAuth consent screen"</li>
+            <li>User Type: Select <strong>"External"</strong></li>
+            <li>Click "Create"</li>
+            <li>App name: <code>2FA Manager</code></li>
+            <li>User support email: Your email</li>
+            <li>Developer contact: Your email</li>
+            <li>Click "Save and Continue"</li>
+            <li>On Scopes page, click "Add or Remove Scopes"</li>
+            <li>Add scope: <code>https://www.googleapis.com/auth/drive.appdata</code></li>
+            <li>Click "Update" → "Save and Continue"</li>
+            <li>Add your email as test user</li>
+            <li>Click "Save and Continue"</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>4. Create OAuth Client ID</h4>
+          <ol>
+            <li>Go to "APIs & Services" → "Credentials"</li>
+            <li>Click "Create Credentials" → "OAuth client ID"</li>
+            <li>Application type: <strong>"Web application"</strong></li>
+            <li>Name: <code>2FA Manager Extension</code></li>
+            <li>Authorized redirect URIs: Add <code id="redirect-uri">https://YOUR_EXTENSION_ID.chromiumapp.org/</code>
+              <button class="btn btn-small" id="copy-redirect-uri" style="margin-left: 8px;">Copy</button>
+            </li>
+            <li>Click "Create"</li>
+            <li><strong>Copy the Client ID</strong> (format: <code>123456789.apps.googleusercontent.com</code>)</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>5. Paste Client ID Above</h4>
+          <p>Copy the Client ID and paste it into the "OAuth Client ID" field on this page, then click "Save Client ID".</p>
+        </div>
+
+        <div class="sync-info" style="margin-top: 24px;">
+          <div class="sync-info-title">⚠️ Important</div>
+          <p style="font-size: 0.9rem; margin: 8px 0 0 0;">
+            • Make sure to use <strong>"Web application"</strong> as the OAuth client type<br>
+            • The redirect URI must match your extension ID exactly<br>
+            • Add your Google account as a test user in OAuth consent screen
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Prompt Modal (for download) -->
+  <div id="password-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Enter Master Password</h2>
+        <button class="close-modal" id="close-password-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="description">Enter your master password to decrypt the cloud vault.</p>
+        <form id="password-form">
+          <div class="form-group">
+            <input
+              type="password"
+              id="master-password-input"
+              class="input"
+              placeholder="Master password"
+              required
+            >
+          </div>
+          <div class="error" id="password-error"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancel-password">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conflict Modal -->
+  <div id="conflict-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚠️ Sync Conflict</h2>
+        <button class="close-modal" id="close-conflict-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="conflict-message"></div>
+        <div class="conflict-options">
+          <button class="btn btn-primary" id="use-cloud-btn">Use Cloud Version</button>
+          <button class="btn btn-secondary" id="keep-local-btn">Keep Local Version</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-message"></span>
+  </div>
+
+  <script src="cloud-sync.js"></script>
+  <script src="cloud-sync-page.js"></script>
+</body>
+</html>

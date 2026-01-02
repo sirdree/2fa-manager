@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Icons</title>
+</head>
+<body>
+  <h1>2FA Extension Icons</h1>
+  <p>Download these images and save them to the icons folder:</p>
+
+  <canvas id="icon16" width="16" height="16"></canvas>
+  <canvas id="icon48" width="48" height="48"></canvas>
+  <canvas id="icon128" width="128" height="128"></canvas>
+
+  <script>
+    function createIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#4CAF50');
+      gradient.addColorStop(1, '#388E3C');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+
+      // Lock icon
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const scale = size / 128;
+
+      // Lock body
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(centerX - 30 * scale, centerY - 10 * scale, 60 * scale, 50 * scale, 5 * scale);
+      ctx.fill();
+
+      // Lock shackle
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 8 * scale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - 15 * scale, 20 * scale, Math.PI, 0, false);
+      ctx.stroke();
+
+      // Keyhole
+      ctx.fillStyle = '#4CAF50';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY + 10 * scale, 8 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillRect(centerX - 3 * scale, centerY + 10 * scale, 6 * scale, 15 * scale);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = `icon${size}.png`;
+      link.href = canvas.toDataURL();
+      link.textContent = `Download icon${size}.png`;
+      document.body.appendChild(link);
+      document.body.appendChild(document.createElement('br'));
+    }
+
+    createIcon(document.getElementById('icon16'), 16);
+    createIcon(document.getElementById('icon48'), 48);
+    createIcon(document.getElementById('icon128'), 128);
+  </script>
+</body>
+</html>

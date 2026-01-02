@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2FA Manager - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Password Modal (shown on page load) -->
+    <div id="password-modal" class="password-modal">
+      <div class="password-modal-content">
+        <div class="password-modal-header">
+          <div class="password-logo">🔐</div>
+          <h1>2FA Manager</h1>
+          <p class="subtitle">Enter your master password to access settings</p>
+        </div>
+        <form id="password-form" class="password-form">
+          <input
+            type="password"
+            id="options-master-password"
+            class="input"
+            placeholder="Master password"
+            autocomplete="current-password"
+            required
+            autofocus
+          >
+          <button type="submit" class="btn btn-primary btn-large">Unlock</button>
+          <p id="password-error" class="error"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">🔐</div>
+        <h1>2FA Manager</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="accounts">
+          <span class="icon">📱</span>
+          Accounts
+        </button>
+        <button class="nav-item" data-section="security">
+          <span class="icon">🔒</span>
+          Security
+        </button>
+        <button class="nav-item" data-section="cloud-sync">
+          <span class="icon">☁️</span>
+          Cloud Sync
+        </button>
+        <button class="nav-item" data-section="settings">
+          <span class="icon">⚙️</span>
+          Settings
+        </button>
+        <button class="nav-item" data-section="about">
+          <span class="icon">ℹ️</span>
+          About
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="lock-vault-btn" class="btn-lock">
+          <span class="icon">🔒</span>
+          Lock Vault
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Accounts Section -->
+      <section id="accounts-section" class="section active">
+        <div class="section-header">
+          <h2>Accounts</h2>
+          <button id="add-account-btn" class="btn btn-primary">
+            <span class="icon">+</span> Add Account
+          </button>
+        </div>
+
+        <div class="search-bar">
+          <input
+            type="text"
+            id="search-accounts"
+            class="input"
+            placeholder="Search accounts..."
+          >
+        </div>
+
+        <div id="accounts-list" class="accounts-list">
+          <!-- Accounts will be inserted here -->
+        </div>
+
+        <div id="no-accounts" class="empty-state hidden">
+          <div class="empty-icon">📱</div>
+          <h3>No accounts yet</h3>
+          <p>Add your first 2FA account to get started</p>
+          <button class="btn btn-primary add-first-btn">Add Account</button>
+        </div>
+      </section>
+
+      <!-- Security Section -->
+      <section id="security-section" class="section">
+        <div class="section-header">
+          <h2>Security</h2>
+        </div>
+
+        <div class="settings-card">
+          <h3>Change Master Password</h3>
+          <p class="description">Change your master password. Make sure to remember it!</p>
+
+          <form id="change-password-form" class="form">
+            <div class="form-group">
+              <label for="current-password">Current Password</label>
+              <input
+                type="password"
+                id="current-password"
+                class="input"
+                placeholder="Enter current password"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="new-password">New Password</label>
+              <input
+                type="password"
+                id="new-password"
+                class="input"
+                placeholder="Enter new password"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-password">Confirm New Password</label>
+              <input
+                type="password"
+                id="confirm-password"
+                class="input"
+                placeholder="Confirm new password"
+                required
+              >
+            </div>
+
+            <div id="password-error" class="error"></div>
+
+            <button type="submit" class="btn btn-primary">Change Password</button>
+          </form>
+        </div>
+
+        <div class="settings-card">
+          <h3>Backup & Restore</h3>
+          <p class="description">
+            Export an encrypted backup of your vault, or restore from a backup file.
+            Your data is encrypted with your master password before export.
+          </p>
+
+          <div class="backup-actions">
+            <button id="export-btn" class="btn btn-secondary">
+              <span class="icon">📥</span> Export Backup
+            </button>
+            <input type="file" id="import-file" accept=".json" class="hidden">
+            <button id="import-btn" class="btn btn-secondary">
+              <span class="icon">📤</span> Import Backup
+            </button>
+          </div>
+
+          <div id="backup-status" class="backup-info"></div>
+        </div>
+
+
+        <div class="settings-card danger">
+          <h3>Delete All Data</h3>
+          <p class="description">Permanently delete all accounts and reset the extension.</p>
+          <button id="delete-all-btn" class="btn btn-danger">
+            <span class="icon">🗑️</span> Delete Everything
+          </button>
+        </div>
+      </section>
+
+      <!-- Cloud Sync Section -->
+      <section id="cloud-sync-section" class="section">
+        <div class="section-header">
+          <h2>☁️ Chrome Sync</h2>
+        </div>
+
+        <div class="settings-card">
+          <p class="description">
+            Sync your encrypted vault across all Chrome browsers signed into your Google account.
+            <strong>No configuration required!</strong>
+          </p>
+
+          <div class="cloud-info-box">
+            <strong>✨ How it works:</strong>
+            <ul style="margin: 8px 0 0 20px; font-size: 0.9rem;">
+              <li>Uses Chrome's built-in sync (same as bookmarks, passwords)</li>
+              <li>Your vault remains encrypted with your master password</li>
+              <li>Automatically syncs across devices signed into your Google account</li>
+              <li>Uses Chrome Sync Storage with limited size - <a href="https://developer.chrome.com/docs/extensions/reference/api/storage#properties_3" target="_blank" class="link">see limits</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sync Status -->
+        <div class="settings-card">
+          <h3>Sync Status</h3>
+
+          <div class="sync-status-grid">
+            <div class="sync-status-item">
+              <div class="sync-status-label">Sync Enabled</div>
+              <div class="sync-status-value" id="sync-enabled-status">Loading...</div>
+            </div>
+
+            <div class="sync-status-item">
+              <div class="sync-status-label">Storage Used</div>
+              <div class="sync-status-value" id="sync-storage-used">--</div>
+            </div>
+
+            <div class="sync-status-item">
+              <div class="sync-status-label">Last Sync</div>
+              <div class="sync-status-value" id="sync-last-time">Never</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <button type="button" class="btn btn-primary" id="enable-sync-btn">
+              Enable Sync
+            </button>
+            <button type="button" class="btn btn-secondary hidden" id="disable-sync-btn">
+              Disable Sync
+            </button>
+          </div>
+        </div>
+
+        <!-- Sync Actions -->
+        <div class="settings-card" id="sync-actions-card" style="display: none;">
+          <h3>Sync Actions</h3>
+
+          <div class="cloud-sync-actions">
+            <div class="sync-action-item">
+              <button type="button" class="btn btn-secondary" id="upload-sync-btn">
+                ⬆️ Upload to Cloud
+              </button>
+              <div class="sync-timestamp">Backup your current vault to Chrome sync</div>
+            </div>
+
+            <div class="sync-action-item">
+              <button type="button" class="btn btn-secondary" id="download-sync-btn">
+                ⬇️ Download from Cloud
+              </button>
+              <div class="sync-timestamp">Restore vault from Chrome sync</div>
+            </div>
+          </div>
+
+          <div class="cloud-info-box" style="margin-top: 16px;">
+            <strong>⚠️ Important:</strong>
+            <ul style="margin: 8px 0 0 20px; font-size: 0.9rem;">
+              <li><strong>Upload:</strong> Replaces cloud backup with local vault</li>
+              <li><strong>Download:</strong> Replaces local vault with cloud backup</li>
+              <li>Make sure to use the same master password on all devices!</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Auto-Sync Settings -->
+        <div class="settings-card" id="auto-sync-settings-card" style="display: none;">
+          <h3>Auto-Sync Settings</h3>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="auto-sync-enabled">Enable Auto-Sync</label>
+              <p class="description">Automatically upload vault to cloud at regular intervals</p>
+            </div>
+            <input type="checkbox" id="auto-sync-enabled" class="toggle">
+          </div>
+
+          <div class="form-group" id="auto-sync-interval-group" style="display: none;">
+            <label for="auto-sync-interval">Sync Interval</label>
+            <select id="auto-sync-interval" class="input">
+              <option value="5">Every 5 minutes</option>
+              <option value="10">Every 10 minutes</option>
+              <option value="30" selected>Every 30 minutes</option>
+              <option value="60">Every hour</option>
+              <option value="360">Every 6 hours</option>
+              <option value="720">Every 12 hours</option>
+              <option value="1440">Every 24 hours (Daily)</option>
+            </select>
+          </div>
+
+          <div class="cloud-info-box" style="margin-top: 16px;">
+            <strong>💡 Tip:</strong> Auto-sync only uploads changes (one-way backup). It doesn't download automatically to prevent accidental overwrites.
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section id="settings-section" class="section">
+        <div class="section-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="settings-card">
+          <h3>General Settings</h3>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="auto-lock">Auto-lock Vault</label>
+              <p class="description">Automatically lock after inactivity</p>
+            </div>
+            <input type="checkbox" id="auto-lock" class="toggle">
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="lock-timeout">Lock Timeout</label>
+              <p class="description">Minutes before auto-lock</p>
+            </div>
+            <select id="lock-timeout" class="input">
+              <option value="1">1 minute</option>
+              <option value="5">5 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="0">Never</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="clipboard-timeout">Clipboard Timeout</label>
+              <p class="description">Seconds before clearing clipboard</p>
+            </div>
+            <select id="clipboard-timeout" class="input">
+              <option value="15">15 seconds</option>
+              <option value="30">30 seconds</option>
+              <option value="60">1 minute</option>
+              <option value="0">Never</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="show-notifications">Show Notifications</label>
+              <p class="description">Display notifications for actions</p>
+            </div>
+            <input type="checkbox" id="show-notifications" class="toggle">
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>Default Settings for New Accounts</h3>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="default-digits">Code Digits</label>
+            </div>
+            <select id="default-digits" class="input">
+              <option value="6">6 digits</option>
+              <option value="8">8 digits</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <label for="default-period">Code Period</label>
+            </div>
+            <select id="default-period" class="input">
+              <option value="30">30 seconds</option>
+              <option value="60">60 seconds</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- About Section -->
+      <section id="about-section" class="section">
+        <div class="section-header">
+          <h2>About</h2>
+        </div>
+
+        <div class="about-card">
+          <div class="about-icon">🔐</div>
+          <h3>2FA Manager & Autofill</h3>
+          <p class="version">Version 1.1.0</p>
+          <p class="creator">Created by: Ervin dev@bit2soft.com</p>
+
+          <p class="description">
+            A secure Chrome extension for managing 2FA codes with autofill capabilities.
+            Store your credentials and generate TOTP codes directly in your browser.
+          </p>
+
+          <div class="features">
+            <div class="feature">
+              <span class="feature-icon">🔒</span>
+              <div>
+                <strong>Secure Storage</strong>
+                <p>Accounts encrypted with your master password</p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">⚡</span>
+              <div>
+                <strong>Autofill</strong>
+                <p>Automatically fill login forms and 2FA codes</p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">📱</span>
+              <div>
+                <strong>QR Code Support</strong>
+                <p>Scan QR codes to quickly add accounts</p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">🔄</span>
+              <div>
+                <strong>Auto-refresh</strong>
+                <p>Codes refresh automatically every 30 seconds</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="about-footer">
+            <p>Open source extension for better security and convenience.</p>
+            <div class="about-actions">
+              <a href="https://www.paypal.com/donate/?hosted_button_id=GJGXEPFP2SWFW" target="_blank" class="btn btn-primary">
+                ☕ Buy me a coffee
+              </a>
+              <a href="https://github.com/sirdree/2fa-manager" target="_blank" class="btn btn-secondary">
+                🔗 GitHub Repository
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Edit Account Modal -->
+  <div id="edit-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Account</h2>
+        <button class="close-modal">×</button>
+      </div>
+
+      <form id="edit-account-form" class="form">
+        <input type="hidden" id="edit-account-id">
+
+        <div class="form-group">
+          <label for="edit-issuer">Issuer / Service</label>
+          <input
+            type="text"
+            id="edit-issuer"
+            class="input"
+            placeholder="e.g., Google, GitHub"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="edit-name">Account Name / Email</label>
+          <input
+            type="text"
+            id="edit-name"
+            class="input"
+            placeholder="e.g., user@example.com"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="edit-username">Username / Email</label>
+          <input
+            type="text"
+            id="edit-username"
+            class="input"
+            placeholder="Save username for autofill"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="edit-password">Password</label>
+          <div class="password-input">
+            <input
+              type="password"
+              id="edit-password"
+              class="input"
+              placeholder="Save password for autofill"
+            >
+            <button type="button" class="toggle-password">👁️</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-secret">2FA Secret Key</label>
+          <div class="input-with-toggle">
+            <input
+              type="password"
+              id="edit-secret"
+              class="input"
+              placeholder="Base32 secret key for 2FA codes"
+            >
+            <button type="button" id="edit-toggle-secret" class="toggle-secret" title="Show/Hide secret">👁️</button>
+          </div>
+          <small>Leave empty to keep existing secret, or enter new key to update</small>
+        </div>
+
+        <div id="edit-form-error" class="error"></div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-edit">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-message"></span>
+  </div>
+
+  <!-- Import Password Modal -->
+  <div id="import-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Import Backup</h2>
+        <button class="close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">
+          Enter your master password to verify ownership and import this backup.
+        </p>
+        <form id="import-password-form" class="form">
+          <div class="form-group">
+            <label for="import-master-password">Master Password</label>
+            <input
+              type="password"
+              id="import-master-password"
+              class="input"
+              placeholder="Enter your master password"
+              required
+              autofocus
+            >
+          </div>
+          <div id="import-error" class="error"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary cancel-import">Cancel</button>
+            <button type="submit" class="btn btn-primary">Import Backup</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="modal hidden">
+    <div class="modal-content modal-danger">
+      <div class="modal-header">
+        <h2>Delete All Data</h2>
+        <button class="close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="warning-icon">⚠️</div>
+        <p class="warning-text">
+          This will <strong>PERMANENTLY</strong> delete all your accounts and data.
+        </p>
+        <p class="warning-description">
+          This action cannot be undone. You will need to set up your master password and add all accounts again.
+        </p>
+        <form id="delete-confirm-form" class="form">
+          <div class="form-group">
+            <label for="delete-confirm-text">Type "DELETE" to confirm:</label>
+            <input
+              type="text"
+              id="delete-confirm-text"
+              class="input"
+              placeholder="Type DELETE"
+              required
+              autofocus
+            >
+          </div>
+          <div id="delete-error" class="error"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary cancel-delete">Cancel</button>
+            <button type="submit" class="btn btn-danger">Delete Everything</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Single Account Confirmation Modal -->
+  <div id="delete-account-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Delete Account</h2>
+        <button class="close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="warning-icon">🗑️</div>
+        <p class="warning-text">
+          Are you sure you want to delete this account?
+        </p>
+        <p id="delete-account-name" class="warning-description"></p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-delete-account">Cancel</button>
+          <button type="button" id="confirm-delete-account" class="btn btn-danger">Delete Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conflict Resolution Modal -->
+  <div id="conflict-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚠️ Sync Conflict Detected</h2>
+        <button class="close-modal" id="close-conflict-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="conflict-message"></div>
+        <div class="conflict-options">
+          <button type="button" class="btn btn-primary" id="merge-both-btn">
+            🔄 Merge Both (Recommended)
+          </button>
+          <button type="button" class="btn btn-secondary" id="use-cloud-version-btn">
+            ☁️ Use Cloud Only
+          </button>
+          <button type="button" class="btn btn-secondary" id="keep-local-version-btn">
+            💾 Keep Local Only
+          </button>
+          <button type="button" class="btn" id="cancel-conflict-btn">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+  <script src="options-cloud.js"></script>
+</body>
+</html>
