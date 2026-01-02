@@ -159,10 +159,6 @@ No external servers or third-party services are used.
 - **No External Requests** - All operations are local
 - **Open Source** - Code is publicly auditable
 
-## Development
-
-See [CLAUDE.md](./CLAUDE.md) for detailed development documentation.
-
 ### Testing
 
 1. Load extension in Chrome (see Installation)
