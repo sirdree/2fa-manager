@@ -4,16 +4,16 @@
   --primary: #4CAF50;
   --primary-dark: #388E3C;
   --secondary: #2196F3;
-  --danger: #F44336;
+  --danger: #ef5350;
   --warning: #FF9800;
-  --bg: #121212;
-  --bg-elevated: #1e1e1e;
-  --bg-hover: #2d2d2d;
-  --text: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --border: #333;
-  --shadow: rgba(0, 0, 0, 0.3);
-  --radius: 8px;
+  --bg: rgb(28, 33, 40);
+  --bg-elevated: rgb(34, 40, 49);
+  --bg-hover: rgb(40, 48, 58);
+  --text: #ffffff;
+  --text-secondary: #b0b0b0;
+  --border: rgb(95, 95, 135);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --radius: 6px;
   --radius-sm: 4px;
 }
 
@@ -595,7 +595,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(10, 12, 15, 0.85); /* Subtler themed overlay */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -608,10 +608,12 @@ body {
 }
 
 .modal-content {
-  background: var(--bg-elevated);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   width: 100%;
   max-width: 500px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
 }
 
 .modal-header {
@@ -624,6 +626,20 @@ body {
 
 .modal-header h2 {
   font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.modal-form {
+  padding: 24px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .close-modal {
@@ -632,7 +648,12 @@ body {
   font-size: 24px;
   cursor: pointer;
   padding: 4px;
-  color: var(--text-secondary);
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: white;
 }
 
 .modal-content .form {
@@ -801,13 +822,14 @@ body {
 }
 
 .password-modal-content {
-  background: var(--bg-elevated);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 40px;
-  min-width: 400px;
+  padding: 48px;
+  min-width: 440px;
   max-width: 90%;
-  box-shadow: 0 8px 32px var(--shadow);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+  text-align: center;
 }
 
 .password-modal-header {

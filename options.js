@@ -16,7 +16,7 @@ const elements = {
   passwordModal: document.getElementById('password-modal'),
   passwordForm: document.getElementById('password-form'),
   masterPasswordInput: document.getElementById('options-master-password'),
-  passwordError: document.getElementById('password-error'),
+  passwordError: document.getElementById('options-unlock-error'),
 
   // Navigation
   navItems: document.querySelectorAll('.nav-item'),
@@ -34,7 +34,7 @@ const elements = {
   currentPassword: document.getElementById('current-password'),
   newPassword: document.getElementById('new-password'),
   confirmPassword: document.getElementById('confirm-password'),
-  passwordError: document.getElementById('password-error'),
+  securityPasswordError: document.getElementById('options-security-error'),
   exportBtn: document.getElementById('export-btn'),
   importBtn: document.getElementById('import-btn'),
   importFile: document.getElementById('import-file'),
@@ -49,8 +49,9 @@ const elements = {
   defaultDigits: document.getElementById('default-digits'),
   defaultPeriod: document.getElementById('default-period'),
 
-  // Edit Modal
+  // Account Modal (Unified Add/Edit)
   editModal: document.getElementById('edit-modal'),
+  modalTitle: document.getElementById('modal-title'),
   closeModal: document.querySelector('.close-modal'),
   editAccountForm: document.getElementById('edit-account-form'),
   editAccountId: document.getElementById('edit-account-id'),
@@ -61,6 +62,8 @@ const elements = {
   togglePassword: document.querySelector('.toggle-password'),
   editSecret: document.getElementById('edit-secret'),
   editToggleSecret: document.getElementById('edit-toggle-secret'),
+  editDigits: document.getElementById('edit-digits'),
+  editPeriod: document.getElementById('edit-period'),
   cancelEdit: document.querySelector('.cancel-edit'),
   formError: document.getElementById('edit-form-error'),
 
@@ -96,26 +99,30 @@ async function init() {
   // Setup event listeners first
   setupEventListeners();
 
-  // Check if we have password in session storage (auto-unlock)
-  const sessionData = await chrome.storage.session.get('masterPassword');
-  const storedPassword = sessionData.masterPassword;
+  // Check background status
+  const statusResponse = await sendMessage({ type: 'GET_STATUS' });
 
-  if (storedPassword) {
-    // Auto-unlock with stored password
-    await unlockVault(storedPassword);
-  } else {
-    // Check if vault is unlocked in background
-    const statusResponse = await sendMessage({ type: 'GET_STATUS' });
-
-    if (!statusResponse.unlocked) {
-      // Redirect to popup
-      window.location.href = 'popup.html';
-      return;
+  if (statusResponse.unlocked) {
+    // Background is unlocked!
+    vaultUnlocked = true;
+    
+    // Attempt to get password from session storage
+    const sessionData = await chrome.storage.session.get('masterPassword');
+    if (sessionData.masterPassword) {
+      currentPassword = sessionData.masterPassword;
     }
 
-    // Show password modal and wait for unlock
-    elements.passwordModal.classList.remove('hidden');
-    elements.masterPasswordInput.focus();
+    // Hide modal and load UI
+    elements.passwordModal.classList.add('hidden');
+    await Promise.all([
+      loadAccounts(),
+      loadSettings()
+    ]);
+    if (typeof initCloudSync === 'function') await initCloudSync();
+  } else {
+    // Vault is locked, must unlock via popup or here
+    // Redirect to popup for consistent behavior
+    window.location.href = 'popup.html';
   }
 }
 
@@ -132,7 +139,7 @@ async function unlockVault(password) {
     currentPassword = password;
     vaultUnlocked = true;
 
-    // Store password in session for auto-unlock on page refresh
+    // Store password in session storage
     await chrome.storage.session.set({ masterPassword: password });
 
     // Hide password modal
@@ -172,12 +179,10 @@ async function loadAccounts() {
 function renderAccounts(filter = '') {
   const filtered = filter
     ? accounts.filter(a =>
-      a.issuer.toLowerCase().includes(filter.toLowerCase()) ||
-      a.accountName.toLowerCase().includes(filter.toLowerCase())
+      (a.issuer + a.accountName + (a.username||'')).toLowerCase().includes(filter.toLowerCase())
     )
     : accounts;
 
-  // Force DOM refresh by clearing and re-adding
   elements.accountsList.innerHTML = '';
 
   if (filtered.length === 0) {
@@ -189,7 +194,6 @@ function renderAccounts(filter = '') {
   elements.accountsList.classList.remove('hidden');
   elements.noAccounts.classList.add('hidden');
 
-  // Create document fragment for better performance
   const fragment = document.createDocumentFragment();
 
   filtered.forEach(account => {
@@ -204,26 +208,18 @@ function renderAccounts(filter = '') {
       <div class="account-info">
         <div class="account-issuer">${escapeHtml(account.issuer || 'Unknown')}</div>
         <div class="account-name">${escapeHtml(account.accountName)}</div>
-        ${account.username || account.password ? `
-          <div class="account_credentials">
-            ${account.username ? `<span>👤 ${escapeHtml(account.username)}</span>` : ''}
-            ${account.password ? `<span>🔑 Password saved</span>` : ''}
-          </div>
-        ` : ''}
+        ${account.username ? `<div class="account-credentials">👤 ${escapeHtml(account.username)}</div>` : ''}
       </div>
       <div class="account-actions">
-        <button class="icon-btn edit-btn" data-account-id="${account.id}" title="Edit">✏️</button>
-        <button class="icon-btn delete-btn" data-account-id="${account.id}" title="Delete">🗑️</button>
+        <button class="btn btn-secondary edit-btn" data-account-id="${account.id}" title="Edit">✏️ Edit</button>
+        <button class="btn btn-danger delete-btn" data-account-id="${account.id}" title="Delete">🗑️</button>
       </div>
     `;
 
     fragment.appendChild(card);
   });
 
-  // Clear and append (forces browser to re-render)
   elements.accountsList.appendChild(fragment);
-
-  // Add event listeners
   attachAccountListeners();
 }
 
@@ -249,37 +245,56 @@ function attachAccountListeners() {
 }
 
 /**
+ * Open add modal
+ */
+function openAddModal() {
+  editingAccountId = null;
+  elements.editAccountId.value = '';
+  elements.modalTitle.textContent = 'Add Account';
+  elements.editAccountForm.reset();
+  
+  // Set default values
+  elements.editDigits.value = settings.defaultDigits || 6;
+  elements.editPeriod.value = settings.defaultPeriod || 30;
+  
+  elements.editSecret.type = 'text';
+  elements.formError.textContent = '';
+  elements.editModal.classList.remove('hidden');
+}
+
+/**
  * Open edit modal
  */
 function openEditModal(accountId) {
   const account = accounts.find(a => a.id === accountId);
   if (!account) return;
 
+  editingAccountId = accountId;
   elements.editAccountId.value = account.id;
+  elements.modalTitle.textContent = 'Edit Account';
+  
   elements.editIssuer.value = account.issuer || '';
   elements.editName.value = account.accountName || '';
   elements.editUsername.value = account.username || '';
   elements.editPassword.value = account.password || '';
+  elements.editDigits.value = account.digits || 6;
+  elements.editPeriod.value = account.period || 30;
 
-  // Handle 2FA secret - show asterisks if secret exists
   if (account.secret) {
     elements.editSecret.type = 'password';
     elements.editSecret.value = '••••••••••••••••••••••••';
     elements.editSecret.dataset.originalSecret = account.secret;
-    elements.editToggleSecret.textContent = '👁️';
   } else {
     elements.editSecret.value = '';
     elements.editSecret.dataset.originalSecret = '';
-    elements.editToggleSecret.textContent = '👁️';
   }
 
   elements.formError.textContent = '';
-
   elements.editModal.classList.remove('hidden');
 }
 
 /**
- * Close edit modal
+ * Close modal
  */
 function closeEditModal() {
   elements.editModal.classList.add('hidden');
@@ -288,102 +303,44 @@ function closeEditModal() {
 }
 
 /**
- * Save account edit
+ * Save account (Add or Edit)
  */
-async function saveAccountEdit(e) {
+async function saveAccount(e) {
   e.preventDefault();
 
-  // Handle 2FA secret
   let secret = elements.editSecret.value.trim();
   const originalSecret = elements.editSecret.dataset.originalSecret || '';
 
-  // If secret is asterisks or empty, preserve original
   if (secret === '••••••••••••••••••••••••' || secret === '') {
     secret = originalSecret;
   } else {
-    // New secret entered, validate it
     secret = secret.toUpperCase().replace(/\s/g, '');
-    if (secret && !/^[A-Z2-7]+$/.test(secret)) {
-      elements.formError.textContent = 'Invalid secret key format (must be Base32)';
-      return;
-    }
   }
 
-  const updates = {
+  const accountData = {
     issuer: elements.editIssuer.value.trim(),
     accountName: elements.editName.value.trim(),
     username: elements.editUsername.value.trim(),
     password: elements.editPassword.value,
-    secret: secret
+    secret: secret,
+    digits: parseInt(elements.editDigits.value),
+    period: parseInt(elements.editPeriod.value)
   };
 
+  const type = editingAccountId ? 'UPDATE_ACCOUNT' : 'ADD_ACCOUNT';
   const response = await sendMessage({
-    type: 'UPDATE_ACCOUNT',
-    id: elements.editAccountId.value,
-    updates,
+    type,
+    id: editingAccountId,
+    account: accountData,
     password: currentPassword
   });
 
   if (response.success) {
     closeEditModal();
     await loadAccounts();
-    showToast('Account updated!');
+    showToast(editingAccountId ? 'Account updated!' : 'Account added!');
   } else {
-    elements.formError.textContent = response.error || 'Failed to update account';
-  }
-}
-
-/**
- * Delete account
- */
-async function deleteAccount(accountId) {
-  const response = await sendMessage({
-    type: 'DELETE_ACCOUNT',
-    id: accountId,
-    password: currentPassword
-  });
-
-  if (response.success) {
-    await loadAccounts();
-    showToast('Account deleted!');
-  } else {
-    showToast(response.error || 'Failed to delete account');
-  }
-}
-
-/**
- * Show delete account confirmation modal
- */
-function showDeleteAccountModal(account) {
-  if (!account) return;
-  pendingDeleteAccountId = account.id;
-
-  elements.deleteAccountName.textContent =
-    `${account.issuer || 'Unknown'} (${account.accountName || 'No name'})`;
-
-  elements.deleteAccountModal.classList.remove('hidden');
-}
-
-/**
- * Confirm delete account
- */
-async function confirmDeleteAccount() {
-  if (!pendingDeleteAccountId) return;
-
-  const response = await sendMessage({
-    type: 'DELETE_ACCOUNT',
-    id: pendingDeleteAccountId,
-    password: currentPassword
-  });
-
-  elements.deleteAccountModal.classList.add('hidden');
-  pendingDeleteAccountId = null;
-
-  if (response.success) {
-    await loadAccounts();
-    showToast('Account deleted!');
-  } else {
-    showToast(response.error || 'Failed to delete account');
+    elements.formError.textContent = response.error || 'Failed to save account';
   }
 }
 
@@ -392,11 +349,8 @@ async function confirmDeleteAccount() {
  */
 async function loadSettings() {
   const response = await sendMessage({ type: 'GET_SETTINGS' });
-
   if (response.success) {
     settings = response.settings;
-
-    // Apply settings to form
     elements.autoLock.checked = settings.autoLock;
     elements.lockTimeout.value = settings.lockTimeout;
     elements.clipboardTimeout.value = settings.clipboardTimeout;
@@ -435,34 +389,25 @@ async function saveSettings() {
  */
 async function changePassword(e) {
   e.preventDefault();
-
   const current = elements.currentPassword.value;
   const newPass = elements.newPassword.value;
   const confirm = elements.confirmPassword.value;
 
-  // Validate
   if (newPass.length < 8) {
-    elements.passwordError.textContent = 'Password must be at least 8 characters';
+    elements.securityPasswordError.textContent = 'Password must be at least 8 characters';
     return;
   }
-
   if (newPass !== confirm) {
-    elements.passwordError.textContent = 'Passwords do not match';
+    elements.securityPasswordError.textContent = 'Passwords do not match';
     return;
   }
 
-  // Verify current password
-  const unlockResponse = await sendMessage({
-    type: 'UNLOCK_VAULT',
-    password: current
-  });
-
+  const unlockResponse = await sendMessage({ type: 'UNLOCK_VAULT', password: current });
   if (!unlockResponse.success) {
-    elements.passwordError.textContent = 'Current password is incorrect';
+    elements.securityPasswordError.textContent = 'Current password is incorrect';
     return;
   }
 
-  // Change password
   const response = await sendMessage({
     type: 'CHANGE_PASSWORD',
     oldPassword: current,
@@ -472,10 +417,10 @@ async function changePassword(e) {
   if (response.success) {
     currentPassword = newPass;
     elements.changePasswordForm.reset();
-    elements.passwordError.textContent = '';
+    elements.securityPasswordError.textContent = '';
     showToast('Password changed successfully!');
   } else {
-    elements.passwordError.textContent = response.error || 'Failed to change password';
+    elements.securityPasswordError.textContent = response.error || 'Failed to change password';
   }
 }
 
@@ -485,33 +430,18 @@ async function changePassword(e) {
 async function exportAccounts() {
   try {
     const response = await sendMessage({ type: 'EXPORT_VAULT' });
-
     if (response.success && response.data) {
-      // Create a downloadable file with encrypted vault data
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement('a');
       a.href = url;
-      const dateStr = new Date().toISOString().split('T')[0];
-      a.download = `2fa-vault-backup-${dateStr}.json`;
+      a.download = `2fa-vault-backup-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
-
       URL.revokeObjectURL(url);
-
-      // Show status
-      elements.backupStatus.innerHTML = `
-        <div class="backup-success">✓ Backup exported on ${new Date().toLocaleString()}</div>
-      `;
-
-      showToast('Vault backup exported successfully!');
-    } else {
-      showToast('Failed to export backup');
+      elements.backupStatus.innerHTML = `<div class="backup-success">✓ Exported on ${new Date().toLocaleString()}</div>`;
+      showToast('Vault exported!');
     }
-  } catch (error) {
-    console.error('Export error:', error);
-    showToast('Export failed: ' + error.message);
-  }
+  } catch (error) { showToast('Export failed'); }
 }
 
 /**
@@ -519,346 +449,113 @@ async function exportAccounts() {
  */
 async function importAccounts(file) {
   try {
-    // Read the file
     const text = await file.text();
     const data = JSON.parse(text);
-
-    // Validate the backup file structure
-    if (!data.version || !data.accounts) {
-      showToast('Invalid backup file format');
-      return;
-    }
-
-    // Store the file data and show password modal
+    if (!data.accounts) { showToast('Invalid format'); return; }
     pendingImportFile = data;
     elements.importError.textContent = '';
     elements.importMasterPassword.value = '';
     elements.importModal.classList.remove('hidden');
     elements.importMasterPassword.focus();
-  } catch (error) {
-    console.error('Import error:', error);
-    showToast('Import failed: ' + error.message);
-  }
+  } catch (error) { showToast('Import failed'); }
 }
 
-/**
- * Process import with password
- */
 async function processImport(password) {
-  if (!pendingImportFile) {
-    return;
-  }
-
-  try {
-    // Send import request with password verification
-    const response = await sendMessage({
-      type: 'IMPORT_VAULT',
-      data: pendingImportFile,
-      password: password
-    });
-
-    if (response.success) {
-      // Clear pending file
-      pendingImportFile = null;
-      elements.importFile.value = '';
-
-      // Close modal
-      elements.importModal.classList.add('hidden');
-      elements.importError.textContent = '';
-
-      // Show status
-      elements.backupStatus.innerHTML = `
-        <div class="backup-success">✓ Backup imported on ${new Date().toLocaleString()}</div>
-      `;
-
-      // Small delay to allow import to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Refresh data - fetch accounts again from background
-      await loadAccounts();
-      await loadSettings();
-
-      // Switch to Accounts section
-      elements.sections.forEach(s => s.classList.remove('active'));
-      elements.navItems.forEach(i => i.classList.remove('active'));
-      document.getElementById('accounts-section').classList.add('active');
-      document.querySelector('.nav-item[data-section="accounts"]').classList.add('active');
-
-      showToast('Vault imported successfully!');
-    } else {
-      elements.importError.textContent = response.error || 'Import failed';
-    }
-  } catch (error) {
-    console.error('Import error:', error);
-    elements.importError.textContent = error.message;
+  if (!pendingImportFile) return;
+  const response = await sendMessage({ type: 'IMPORT_VAULT', data: pendingImportFile, password });
+  if (response.success) {
+    pendingImportFile = null;
+    elements.importModal.classList.add('hidden');
+    await loadAccounts();
+    showToast('Vault imported!');
+  } else {
+    elements.importError.textContent = response.error || 'Import failed';
   }
 }
 
 /**
- * Delete all data
+ * Delete account confirmation
  */
-function showDeleteModal() {
-  elements.deleteError.textContent = '';
-  elements.deleteConfirmText.value = '';
-  elements.deleteModal.classList.remove('hidden');
-  elements.deleteConfirmText.focus();
+function showDeleteAccountModal(account) {
+  if (!account) return;
+  pendingDeleteAccountId = account.id;
+  elements.deleteAccountName.textContent = `${account.issuer || 'Unknown'} (${account.accountName})`;
+  elements.deleteAccountModal.classList.remove('hidden');
 }
 
-async function processDelete(confirmText) {
-  if (confirmText !== 'DELETE') {
-    elements.deleteError.textContent = 'Please type "DELETE" to confirm';
-    return;
-  }
-
-  try {
-    // Delete all accounts
-    for (const account of accounts) {
-      await sendMessage({
-        type: 'DELETE_ACCOUNT',
-        id: account.id,
-        password: currentPassword
-      });
-    }
-
-    // Lock vault
-    await sendMessage({ type: 'LOCK_VAULT' });
-
-    // Close modal
-    elements.deleteModal.classList.add('hidden');
-
-    showToast('All data deleted. Redirecting...');
-    setTimeout(() => {
-      window.location.href = 'popup.html';
-    }, 1000);
-  } catch (error) {
-    elements.deleteError.textContent = error.message;
-  }
-}
-
-async function deleteAllData() {
-  showDeleteModal();
+async function confirmDeleteAccount() {
+  if (!pendingDeleteAccountId) return;
+  const response = await sendMessage({ type: 'DELETE_ACCOUNT', id: pendingDeleteAccountId, password: currentPassword });
+  elements.deleteAccountModal.classList.add('hidden');
+  pendingDeleteAccountId = null;
+  if (response.success) { await loadAccounts(); showToast('Deleted!'); }
 }
 
 /**
  * Setup event listeners
  */
 function setupEventListeners() {
-  // Password form
-  elements.passwordForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    unlockVault(elements.masterPasswordInput.value);
-  });
-
-  // Navigation
+  elements.passwordForm.addEventListener('submit', (e) => { e.preventDefault(); unlockVault(elements.masterPasswordInput.value); });
   elements.navItems.forEach(item => {
     item.addEventListener('click', () => {
-      const section = item.dataset.section;
-
       elements.navItems.forEach(i => i.classList.remove('active'));
       elements.sections.forEach(s => s.classList.remove('active'));
-
       item.classList.add('active');
-      document.getElementById(`${section}-section`).classList.add('active');
+      document.getElementById(`${item.dataset.section}-section`).classList.add('active');
     });
   });
 
-  // Lock vault
-  elements.lockVaultBtn.addEventListener('click', async () => {
-    await sendMessage({ type: 'LOCK_VAULT' });
-    window.location.href = 'popup.html';
-  });
-
-  // Search
-  elements.searchAccounts.addEventListener('input', (e) => {
-    renderAccounts(e.target.value);
-  });
-
-  // Add account (redirect to popup with add mode)
-  elements.addAccountBtn.addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
-    // In a real implementation, you'd communicate with popup to open add modal
-    showToast('Use the popup to add new accounts');
-  });
-
-  document.querySelector('.add-first-btn')?.addEventListener('click', () => {
-    showToast('Use the popup to add new accounts');
-  });
-
-  // Change password form
+  elements.lockVaultBtn.addEventListener('click', async () => { await sendMessage({ type: 'LOCK_VAULT' }); window.location.href = 'popup.html'; });
+  elements.searchAccounts.addEventListener('input', (e) => renderAccounts(e.target.value));
+  elements.addAccountBtn.addEventListener('click', openAddModal);
+  document.querySelector('.add-first-btn')?.addEventListener('click', openAddModal);
   elements.changePasswordForm.addEventListener('submit', changePassword);
-
-  // Export
   elements.exportBtn.addEventListener('click', exportAccounts);
-
-  // Import
-  elements.importBtn.addEventListener('click', () => {
-    elements.importFile.click();
+  elements.importBtn.addEventListener('click', () => elements.importFile.click());
+  elements.importFile.addEventListener('change', (e) => { if (e.target.files.length > 0) importAccounts(e.target.files[0]); });
+  elements.deleteAllBtn.addEventListener('click', () => { elements.deleteError.textContent = ''; elements.deleteConfirmText.value = ''; elements.deleteModal.classList.remove('hidden'); });
+  elements.deleteConfirmForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (elements.deleteConfirmText.value === 'DELETE') {
+      await sendMessage({ type: 'RESET_VAULT' });
+      window.location.href = 'popup.html';
+    } else elements.deleteError.textContent = 'Type DELETE to confirm';
   });
 
-  elements.importFile.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      importAccounts(e.target.files[0]);
-    }
-  });
+  [elements.autoLock, elements.lockTimeout, elements.clipboardTimeout, elements.showNotifications, elements.defaultDigits, elements.defaultPeriod].forEach(el => el.addEventListener('change', saveSettings));
 
-  // Delete all
-  elements.deleteAllBtn.addEventListener('click', deleteAllData);
-
-  // Settings changes
-  [elements.autoLock, elements.lockTimeout, elements.clipboardTimeout,
-   elements.showNotifications, elements.defaultDigits, elements.defaultPeriod].forEach(el => {
-    el.addEventListener('change', saveSettings);
-  });
-
-  // Modal
   elements.closeModal.addEventListener('click', closeEditModal);
   elements.cancelEdit.addEventListener('click', closeEditModal);
-  elements.editModal.addEventListener('click', (e) => {
-    if (e.target === elements.editModal) {
-      closeEditModal();
-    }
-  });
-
-  // Import modal
-  elements.importModal.addEventListener('click', (e) => {
-    if (e.target === elements.importModal) {
-      elements.importModal.classList.add('hidden');
-      pendingImportFile = null;
-    }
-  });
-  elements.cancelImport.addEventListener('click', () => {
-    elements.importModal.classList.add('hidden');
-    pendingImportFile = null;
-    // Also clear cloud download if applicable
-    if (typeof clearPendingCloudDownload === 'function') {
-      clearPendingCloudDownload();
-    }
-  });
-  elements.importPasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = elements.importMasterPassword.value;
-
-    // Check if this is a sync download (from options-cloud.js)
-    if (typeof hasPendingSyncDownload === 'function' && hasPendingSyncDownload()) {
-      // Handle synced vault download
-      const result = await applySyncedVault(password);
-      if (result.success) {
-        elements.importModal.classList.add('hidden');
-        elements.importError.textContent = '';
-      } else {
-        elements.importError.textContent = result.error || 'Failed to apply synced vault';
-      }
-    } else if (pendingImportFile) {
-      // Handle local file import
-      processImport(password);
-    }
-  });
-
-  // Delete modal
-  elements.deleteModal.addEventListener('click', (e) => {
-    if (e.target === elements.deleteModal) {
-      elements.deleteModal.classList.add('hidden');
-    }
-  });
-  elements.cancelDelete.addEventListener('click', () => {
-    elements.deleteModal.classList.add('hidden');
-  });
-  elements.deleteConfirmForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    processDelete(elements.deleteConfirmText.value);
-  });
-
-  // Delete account modal
-  elements.deleteAccountModal.addEventListener('click', (e) => {
-    if (e.target === elements.deleteAccountModal) {
-      elements.deleteAccountModal.classList.add('hidden');
-      pendingDeleteAccountId = null;
-    }
-  });
-  elements.cancelDeleteAccount.addEventListener('click', () => {
-    elements.deleteAccountModal.classList.add('hidden');
-    pendingDeleteAccountId = null;
-  });
-  elements.confirmDeleteAccount.addEventListener('click', () => {
-    confirmDeleteAccount();
-  });
-
-  // Toggle password visibility
+  elements.editAccountForm.addEventListener('submit', saveAccount);
   elements.togglePassword.addEventListener('click', () => {
     const type = elements.editPassword.type === 'password' ? 'text' : 'password';
     elements.editPassword.type = type;
     elements.togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
   });
-
-  // Toggle secret visibility
   elements.editToggleSecret.addEventListener('click', () => {
-    const originalSecret = elements.editSecret.dataset.originalSecret || '';
-
-    if (!originalSecret) {
-      // No original secret to show
-      return;
-    }
-
+    const original = elements.editSecret.dataset.originalSecret || '';
+    if (!original && !editingAccountId) return;
     const type = elements.editSecret.type === 'password' ? 'text' : 'password';
     elements.editSecret.type = type;
-
     if (type === 'text') {
-      elements.editSecret.value = originalSecret;
+      if (editingAccountId) elements.editSecret.value = original;
       elements.editToggleSecret.textContent = '🙈';
     } else {
-      elements.editSecret.value = '••••••••••••••••••••••••';
+      if (editingAccountId) elements.editSecret.value = '••••••••••••••••••••••••';
       elements.editToggleSecret.textContent = '👁️';
     }
   });
 
-  // Edit form submit
-  elements.editAccountForm.addEventListener('submit', saveAccountEdit);
-
-  // All close modal buttons
-  document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Close all modals
-      elements.editModal?.classList.add('hidden');
-      elements.importModal?.classList.add('hidden');
-      elements.deleteModal?.classList.add('hidden');
-      elements.deleteAccountModal?.classList.add('hidden');
-      pendingImportFile = null;
-      pendingDeleteAccountId = null;
-    });
-  });
+  elements.importPasswordForm.addEventListener('submit', (e) => { e.preventDefault(); processImport(elements.importMasterPassword.value); });
+  elements.cancelImport.addEventListener('click', () => elements.importModal.classList.add('hidden'));
+  elements.cancelDelete.addEventListener('click', () => elements.deleteModal.classList.add('hidden'));
+  elements.cancelDeleteAccount.addEventListener('click', () => elements.deleteAccountModal.classList.add('hidden'));
+  elements.confirmDeleteAccount.addEventListener('click', confirmDeleteAccount);
 }
 
-/**
- * Send message to background
- */
-function sendMessage(message) {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      resolve(response || { success: false, error: 'No response' });
-    });
-  });
-}
+function sendMessage(m) { return new Promise(r => chrome.runtime.sendMessage(m, r)); }
+function showToast(m) { elements.toastMessage.textContent = m; elements.toast.classList.remove('hidden'); setTimeout(() => elements.toast.classList.add('hidden'), 2000); }
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function shortenUrl(u) { try { return new URL(u).hostname.replace('www.', ''); } catch { return u; } }
 
-/**
- * Show toast notification
- */
-function showToast(message) {
-  elements.toastMessage.textContent = message;
-  elements.toast.classList.remove('hidden');
-
-  setTimeout(() => {
-    elements.toast.classList.add('hidden');
-  }, 3000);
-}
-
-/**
- * Escape HTML
- */
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Initialize
 document.addEventListener('DOMContentLoaded', init);

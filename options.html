@@ -12,9 +12,9 @@
     <div id="password-modal" class="password-modal">
       <div class="password-modal-content">
         <div class="password-modal-header">
-          <div class="password-logo">🔐</div>
+          <div class="password-logo" style="font-size:64px;margin-bottom:16px;">🛡️</div>
           <h1>2FA Manager</h1>
-          <p class="subtitle">Enter your master password to access settings</p>
+          <p class="subtitle">Enter master password to access settings</p>
         </div>
         <form id="password-form" class="password-form">
           <input
@@ -26,8 +26,8 @@
             required
             autofocus
           >
-          <button type="submit" class="btn btn-primary btn-large">Unlock</button>
-          <p id="password-error" class="error"></p>
+          <button type="submit" class="btn btn-primary btn-large" style="width:100%;justify-content:center;">Unlock Vault</button>
+          <p id="options-unlock-error" class="error"></p>
         </form>
       </div>
     </div>
@@ -35,30 +35,25 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo">🔐</div>
+        <div class="logo" style="font-size:24px;">🛡️</div>
         <h1>2FA Manager</h1>
       </div>
 
       <nav class="sidebar-nav">
         <button class="nav-item active" data-section="accounts">
-          <span class="icon">📱</span>
-          Accounts
+          <span class="icon">📱</span> Accounts
         </button>
         <button class="nav-item" data-section="security">
-          <span class="icon">🔒</span>
-          Security
+          <span class="icon">🔒</span> Security
         </button>
         <button class="nav-item" data-section="cloud-sync">
-          <span class="icon">☁️</span>
-          Cloud Sync
+          <span class="icon">☁️</span> Cloud Sync
         </button>
         <button class="nav-item" data-section="settings">
-          <span class="icon">⚙️</span>
-          Settings
+          <span class="icon">⚙️</span> Settings
         </button>
         <button class="nav-item" data-section="about">
-          <span class="icon">ℹ️</span>
-          About
+          <span class="icon">ℹ️</span> About
         </button>
       </nav>
 
@@ -77,7 +72,7 @@
         <div class="section-header">
           <h2>Accounts</h2>
           <button id="add-account-btn" class="btn btn-primary">
-            <span class="icon">+</span> Add Account
+            <span class="icon">➕</span> Add Account
           </button>
         </div>
 
@@ -146,7 +141,7 @@
               >
             </div>
 
-            <div id="password-error" class="error"></div>
+            <div id="options-security-error" class="error"></div>
 
             <button type="submit" class="btn btn-primary">Change Password</button>
           </form>
@@ -382,7 +377,7 @@
         </div>
 
         <div class="about-card">
-          <div class="about-icon">🔐</div>
+          <div class="about-icon">🛡️</div>
           <h3>2FA Manager & Autofill</h3>
           <p class="version">Version 1.1.0</p>
           <p class="creator">Created by: Ervin dev@bit2soft.com</p>
@@ -439,81 +434,73 @@
     </main>
   </div>
 
-  <!-- Edit Account Modal -->
+  <!-- Account Modal (Unified for Add/Edit) -->
   <div id="edit-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Edit Account</h2>
+        <h2 id="modal-title">Edit Account</h2>
         <button class="close-modal">×</button>
       </div>
 
-      <form id="edit-account-form" class="form">
+      <form id="edit-account-form" class="modal-form">
         <input type="hidden" id="edit-account-id">
 
-        <div class="form-group">
-          <label for="edit-issuer">Issuer / Service</label>
-          <input
-            type="text"
-            id="edit-issuer"
-            class="input"
-            placeholder="e.g., Google, GitHub"
-            required
-          >
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-issuer">Issuer / Service</label>
+            <input type="text" id="edit-issuer" class="input" placeholder="e.g., Google, GitHub" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-name">Account Name / Email</label>
+            <input type="text" id="edit-name" class="input" placeholder="e.g., user@example.com" required>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="edit-name">Account Name / Email</label>
-          <input
-            type="text"
-            id="edit-name"
-            class="input"
-            placeholder="e.g., user@example.com"
-            required
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="edit-username">Username / Email</label>
-          <input
-            type="text"
-            id="edit-username"
-            class="input"
-            placeholder="Save username for autofill"
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="edit-password">Password</label>
-          <div class="password-input">
-            <input
-              type="password"
-              id="edit-password"
-              class="input"
-              placeholder="Save password for autofill"
-            >
-            <button type="button" class="toggle-password">👁️</button>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-username">Autofill Username</label>
+            <input type="text" id="edit-username" class="input" placeholder="Optional">
+          </div>
+          <div class="form-group">
+            <label for="edit-password">Autofill Password</label>
+            <div class="password-input">
+              <input type="password" id="edit-password" class="input" placeholder="Optional">
+              <button type="button" class="toggle-password" style="background:transparent; border:none; color:var(--text-dim); position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer;">👁️</button>
+            </div>
           </div>
         </div>
 
         <div class="form-group">
           <label for="edit-secret">2FA Secret Key</label>
-          <div class="input-with-toggle">
-            <input
-              type="password"
-              id="edit-secret"
-              class="input"
-              placeholder="Base32 secret key for 2FA codes"
-            >
-            <button type="button" id="edit-toggle-secret" class="toggle-secret" title="Show/Hide secret">👁️</button>
+          <div class="password-input">
+            <input type="password" id="edit-secret" class="input" placeholder="Base32 Secret">
+            <button type="button" id="edit-toggle-secret" style="background:transparent; border:none; color:var(--text-dim); position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer;">👁️</button>
           </div>
-          <small>Leave empty to keep existing secret, or enter new key to update</small>
+          <small style="color:var(--text-dim); font-size:11px;">Leave empty if not using 2FA</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-digits">Digits</label>
+            <select id="edit-digits" class="input">
+              <option value="6">6 digits</option>
+              <option value="8">8 digits</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-period">Refresh (sec)</label>
+            <select id="edit-period" class="input">
+              <option value="30">30 seconds</option>
+              <option value="60">60 seconds</option>
+            </select>
+          </div>
         </div>
 
         <div id="edit-form-error" class="error"></div>
 
-        <div class="form-actions">
+        <div class="form-actions" style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
           <button type="button" class="btn btn-secondary cancel-edit">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" class="btn btn-primary">Save Account</button>
         </div>
       </form>
     </div>
