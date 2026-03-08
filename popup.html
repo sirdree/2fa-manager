@@ -7,226 +7,168 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <!-- Lock Screen -->
-  <div id="lock-screen" class="screen">
-    <div class="lock-icon">🔒</div>
-    <h1>2FA Manager</h1>
-    <p class="subtitle">Enter your master password to unlock</p>
-    <form id="unlock-form" class="form">
-      <input
-        type="password"
-        id="unlock-password"
-        class="input"
-        placeholder="Master password"
-        autocomplete="current-password"
-        required
-      >
-      <button type="submit" class="btn btn-primary">Unlock</button>
-      <p id="unlock-error" class="error"></p>
-    </form>
-    <p class="reset-link">
-      <a href="#" id="reset-vault">Forgot password? Reset vault</a>
-    </p>
-  </div>
-
-  <!-- Main Screen -->
-  <div id="main-screen" class="screen hidden">
-    <header class="header">
-      <div class="header-left">
-        <h1>2FA Manager</h1>
-        <span id="code-count" class="count">0 accounts</span>
-      </div>
-      <button id="lock-btn" class="icon-btn" title="Lock vault">
-        🔒
-      </button>
-    </header>
-
-    <!-- Search -->
-    <div class="search-box">
-      <input
-        type="text"
-        id="search-input"
-        class="input"
-        placeholder="Search accounts..."
-      >
-    </div>
-
-    <!-- Codes List -->
-    <div id="codes-list" class="codes-list">
-      <!-- Codes will be inserted here -->
-    </div>
-
-    <!-- Empty State -->
-    <div id="empty-state" class="empty-state hidden">
-      <div class="empty-icon">📱</div>
-      <h2>No accounts yet</h2>
-      <p>Add your first account to get started using the buttons below</p>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <button id="add-account-manual-btn" class="btn btn-small btn-primary">
-        <span class="icon">+</span> Add
-      </button>
-      <button id="scan-qr-btn" class="btn btn-small btn-secondary">
-        <span class="icon">📷</span> Scan QR
-      </button>
-      <button id="settings-btn" class="btn btn-small btn-warning">
-        <span class="icon">⚙️</span> Settings
-      </button>
-    </footer>
-  </div>
-
-  <!-- Add/Edit Account Page -->
-  <div id="account-page" class="page hidden">
-    <div class="page-header">
-      <button id="back-to-main" class="btn btn-small btn-secondary">← Back</button>
-      <h2 id="page-title">Adding Manual Account</h2>
-      <div></div>
-    </div>
-    <div class="page-content">
-      <form id="account-form-page" class="form">
-        <!-- Row 1: Website URL (full width) -->
-        <div class="form-group">
-          <label for="page-account-issuer">Website URL</label>
-          <input
-            type="url"
-            id="page-account-issuer"
-            class="input"
-            placeholder="https://example.com/login"
-            required
-          >
-          <small>Current page URL will be auto-filled</small>
+  <!-- 1. Lock Screen (lk-) -->
+  <div id="lock-screen" class="lock-overlay">
+    <div class="lock-box">
+      <div class="lock-icon-lg">🔒</div>
+      <h1 style="font-size:24px;margin-bottom:8px;color:white;">2FA Manager</h1>
+      <p style="color:var(--text-dim);font-size:14px;">Unlock your secure vault</p>
+      <form id="unlock-form">
+        <div class="lock-form-row">
+          <input type="password" id="unlock-password" class="input-main" placeholder="Master password" required>
+          <button type="submit" class="btn-footer btn-footer-primary" style="min-width:110px;height:44px;">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M7 11V7a5 5 0 0 1 10 0v4"></path><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg>
+            Unlock
+          </button>
         </div>
-
-        <!-- Row 2: Username + Password -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="page-account-username">Username</label>
-            <input
-              type="text"
-              id="page-account-username"
-              class="input"
-              placeholder="Your username or email"
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="page-account-password">Password</label>
-            <div class="password-input">
-              <input
-                type="password"
-                id="page-account-password"
-                class="input"
-                placeholder="Your password"
-              >
-              <button type="button" id="page-toggle-password" class="icon-btn">👁️</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Row 3: 2FA Secret Key (optional, full width) -->
-        <div class="form-group">
-          <label for="page-account-secret">2FA Secret Key (optional)</label>
-          <div class="input-with-toggle">
-            <input
-              type="password"
-              id="page-account-secret"
-              class="input"
-              placeholder="Base32 secret key for 2FA codes"
-            >
-            <button type="button" id="toggle-secret" class="toggle-secret" title="Show/Hide secret">👁️</button>
-          </div>
-          <small>Leave empty if this service doesn't use 2FA</small>
-        </div>
-
-        <!-- Divider -->
-        <div class="form-divider-large">
-          <span>——— OPTIONS ———</span>
-        </div>
-
-        <!-- Row 4: Code Length + Refresh Time -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="page-account-digits">Code Length</label>
-            <select id="page-account-digits" class="input">
-              <option value="6">6 digits</option>
-              <option value="8">8 digits</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="page-account-period">Refresh Time</label>
-            <select id="page-account-period" class="input">
-              <option value="30">30 seconds</option>
-              <option value="60">60 seconds</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="page-form-error" class="error"></div>
-
-        <div class="form-actions">
-          <button type="button" id="page-cancel-btn" class="btn btn-secondary">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Account</button>
-        </div>
+        <p id="unlock-error" class="error-text"></p>
       </form>
-    </div>
-  </div>
-
-  <!-- QR Scanner Page -->
-  <div id="qr-page" class="page hidden">
-    <div class="page-header">
-      <button id="back-to-main-qr" class="btn btn-small btn-secondary">← Back</button>
-      <h2>Scan QR Code</h2>
-      <div></div>
-    </div>
-    <div class="page-content">
-      <div id="qr-scanner">
-        <video id="qr-video" class="qr-video" autoplay playsinline></video>
-        <div id="qr-overlay" class="qr-overlay">
-          <div class="qr-scan-frame"></div>
-        </div>
-        <p id="qr-status" class="qr-status">Position QR code in frame</p>
-      </div>
-
-      <div class="qr-buttons">
-        <button type="button" id="start-scan-btn" class="btn btn-primary">
-          <span class="icon">📷</span> Start Camera
-        </button>
-
-        <input type="file" id="qr-upload" accept="image/*" capture="environment" class="hidden">
-        <label for="qr-upload" class="btn btn-secondary">
-          <span class="icon">📁</span> Upload QR Image
-        </label>
-      </div>
-
-      <p class="qr-help">
-        Scan a QR code from a service's 2FA settings to automatically add the account.
+      <p style="margin-top:24px;font-size:12px;">
+        <a href="#" id="reset-vault" style="color:var(--text-dim);text-decoration:none;">Forgot password? Reset vault</a>
       </p>
     </div>
   </div>
 
-  <!-- 2FA Autofill Confirmation -->
-  <div id="autofill-confirm" class="autofill-confirm hidden">
-    <div class="autofill-confirm-content">
-      <div class="autofill-icon">🔐</div>
-      <h3>2FA Code Available</h3>
-      <p id="autofill-message">Found a 2FA code for this service. Would you like to use it?</p>
-      <div class="autofill-code-preview">
-        <span id="autofill-code-preview">--- ---</span>
+  <!-- 2. Main App Screen -->
+  <div id="main-screen" class="hidden" style="height:100%;display:flex;flex-direction:column;">
+    <header class="nav-header">
+      <div class="nav-logo">
+        <svg class="logo-svg icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <div class="nav-title-group">
+          <h1>2FA Manager</h1>
+          <span id="code-count" class="nav-count">0 accounts</span>
+        </div>
       </div>
-      <div class="autofill-actions">
-        <button id="autofill-cancel" class="btn btn-secondary">Cancel</button>
-        <button id="autofill-confirm-btn" class="btn btn-primary">Use This Code</button>
+      <div class="nav-right-actions">
+        <button id="add-account-manual-btn" class="btn-nav btn-nav-primary" title="Add">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add
+        </button>
+        <button id="scan-qr-btn" class="btn-nav" title="Scan">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          Scan
+        </button>
+        <button id="settings-btn" class="btn-nav" style="padding:6px;"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+        <button id="lock-btn" class="btn-nav" style="padding:6px;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>
+      </div>
+    </header>
+
+    <div class="app-container">
+      <!-- 3. Sidebar (sb-) -->
+      <aside class="sidebar">
+        <div class="sb-search-wrapper">
+          <div class="sb-search-box">
+            <svg class="icon" style="width:14px;height:14px;opacity:0.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-input" class="sb-input" style="background:transparent;border:none;color:white;padding:10px;width:100%;font-size:13px;outline:none;" placeholder="Search accounts...">
+          </div>
+        </div>
+        <div id="codes-list" class="sb-list"></div>
+      </aside>
+
+      <!-- 4. Detail Area (dt-) -->
+      <main id="detail-panel" class="detail-area">
+        <div id="empty-detail-state" class="hero-empty">
+          <svg class="icon" style="width:48px;height:48px;margin-bottom:12px;" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          <p>Select an account to view details</p>
+        </div>
+        <div id="account-detail-view" class="dt-view-container hidden"></div>
+      </main>
+    </div>
+
+    <!-- Empty Vault Hero -->
+    <div id="empty-state" class="lock-overlay hidden" style="z-index:100;">
+      <div class="lock-box">
+        <svg class="icon" style="width:64px;height:64px;margin-bottom:16px;opacity:0.2;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <h2 style="font-size:22px;margin-bottom:8px;color:white;">Vault is empty</h2>
+        <p style="color:var(--text-dim);margin-bottom:24px;">Add your first account to get started.</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button id="empty-add-btn" class="btn-footer btn-footer-primary">Add Account</button>
+          <button id="empty-scan-btn" class="btn-footer btn-footer-secondary">Scan QR</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="toast hidden">
-    <span id="toast-message"></span>
+  <!-- 5. Add/Edit Account Overlay -->
+  <div id="account-page" class="page-overlay hidden">
+    <div class="page-header">
+      <button id="back-to-main" class="btn-footer btn-footer-secondary" style="width:36px;height:36px;padding:0;min-width:36px;">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 id="page-title" style="font-size:16px;font-weight:700;color:white;">Edit Account</h2>
+    </div>
+    <div class="page-body">
+      <form id="account-form-page">
+        <div style="margin-bottom:16px;">
+          <label class="dt-label">Website URL</label>
+          <input type="url" id="page-account-issuer" class="input-main" placeholder="https://..." required>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="dt-label">Username</label>
+            <input type="text" id="page-account-username" class="input-main">
+          </div>
+          <div class="form-group">
+            <label class="dt-label">Password</label>
+            <div class="form-input-wrap">
+              <input type="password" id="page-account-password" class="input-main">
+              <button type="button" id="page-toggle-password" class="btn-field-action">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="dt-label">2FA Secret Key</label>
+          <div class="form-input-wrap">
+            <input type="password" id="page-account-secret" class="input-main">
+            <button type="button" id="toggle-secret" class="btn-field-action">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="dt-label">Code Length</label>
+            <select id="page-account-digits" class="input-main"><option value="6">6 digits</option><option value="8">8 digits</option></select>
+          </div>
+          <div class="form-group">
+            <label class="dt-label">Refresh Period</label>
+            <select id="page-account-period" class="input-main"><option value="30">30 seconds</option><option value="60">60 seconds</option></select>
+          </div>
+        </div>
+        <div id="page-form-error" class="error-text"></div>
+      </form>
+    </div>
+    <footer class="app-footer">
+      <button type="button" id="page-cancel-btn" class="btn-footer btn-footer-secondary">Cancel</button>
+      <button type="submit" form="account-form-page" class="btn-footer btn-footer-primary">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save Account
+      </button>
+    </footer>
   </div>
+
+  <!-- QR Overlay Page -->
+  <div id="qr-page" class="page-overlay hidden">
+    <div class="page-header">
+      <button id="back-to-main-qr" class="btn-footer btn-footer-secondary" style="width:36px;height:36px;padding:0;min-width:36px;">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 style="font-size:16px;font-weight:700;color:white;">Scan QR Code</h2>
+    </div>
+    <div class="page-body" style="text-align:center;">
+      <video id="qr-video" style="width:100%;max-width:320px;border-radius:12px;background:black;border:0.5px solid var(--border);" autoplay playsinline></video>
+      <p id="qr-status" style="margin-top:16px;color:var(--text-dim);">Ready to scan</p>
+      <div style="margin-top:24px;display:flex;justify-content:center;gap:12px;">
+        <button id="start-scan-btn" class="btn-footer btn-footer-primary">Start Camera</button>
+        <input type="file" id="qr-upload" accept="image/*" class="hidden">
+        <label for="qr-upload" class="btn-footer btn-footer-secondary">Upload Image</label>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast-msg hidden"><span id="toast-message"></span></div>
 
   <script src="totp.js"></script>
   <script src="qr-scanner.js"></script>
