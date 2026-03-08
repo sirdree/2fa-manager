@@ -1,6 +1,6 @@
 /**
  * Popup Script for 2FA Manager Extension
- * Stable Rebuild with Direct Selectors
+ * Stable Rebuild with Precise Refinements
  */
 
 // State
@@ -61,13 +61,13 @@ const elements = {
 
 // SVG Assets
 const SVG = {
-  COPY: `<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+  COPY: `<svg class="icon" style="opacity:0.6;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
   EYE: `<svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
   FLASH: `<svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
   EDIT: `<svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
-  TRASH: `<svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-  LINK: `<svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
-  USER: `<svg class="icon" style="width:14px;height:14px;margin-right:6px;opacity:0.7;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`
+  TRASH: `<svg class="svg-base icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+  LINK: `<svg class="icon" style="width:12px;height:12px;opacity:0.7;" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+  USER: `<svg class="icon" style="width:14px;height:14px;opacity:0.6;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`
 };
 
 /** Initialize */
@@ -81,7 +81,6 @@ async function init() {
 function showLockScreen() {
   elements.lockScreen.classList.remove('hidden');
   elements.mainScreen.classList.add('hidden');
-  elements.unlockPassword.focus();
 }
 
 function showMainScreen() {
@@ -121,7 +120,7 @@ function renderCodes(filter = '') {
     return `
       <div class="item-acc ${selectedAccountId === code.accountId ? 'active' : ''}" data-account-id="${code.accountId}">
         <div class="item-acc-icon" style="background: ${code.iconColor}">${char}</div>
-        <div class="item-acc-info" style="flex:1;min-width:0;">
+        <div style="flex:1;min-width:0;">
           <div class="item-acc-title">${escapeHtml(sName)}</div>
           <div class="item-acc-sub">${escapeHtml(code.username || code.accountName || '')}</div>
         </div>
@@ -158,7 +157,7 @@ function renderAccountDetail() {
         <div class="dt-content-max">
           <header class="dt-header">
             <div class="dt-header-icon" style="background: ${code.iconColor}">${char}</div>
-            <div class="dt-header-info">
+            <div style="flex:1;min-width:0;">
               <h2 class="dt-header-title">${escapeHtml(sName)}</h2>
               <a href="${code.issuer}" target="_blank" class="dt-header-link" title="${escapeHtml(code.issuer)}">${escapeHtml(dUrl)} ${SVG.LINK}</a>
             </div>
@@ -173,9 +172,9 @@ function renderAccountDetail() {
             <div class="dt-row">
               <label class="dt-label">Username</label>
               <div class="dt-click-box btn-copy" data-value="${code.username || ''}">
-                <div style="display:flex;align-items:center;overflow:hidden;flex:1;">
+                <div class="dt-inner-val">
                   ${SVG.USER}
-                  <span class="dt-text">${escapeHtml(code.username || 'Not set')}</span>
+                  <span class="dt-val-text">${escapeHtml(code.username || 'Not set')}</span>
                 </div>
                 ${SVG.COPY}
               </div>
@@ -184,25 +183,25 @@ function renderAccountDetail() {
             <div class="dt-row">
               <label class="dt-label">Password</label>
               <div class="dt-click-box">
-                <span class="dt-text btn-copy" data-value="${code.password || ''}" style="flex:1;">
-                  ${isDetailPasswordVisible ? escapeHtml(code.password) : '••••••••••••'}
-                </span>
-                <button class="btn-field-action btn-toggle-pass" style="position:static;">${SVG.EYE}</button>
+                <div class="dt-inner-val btn-copy" data-value="${code.password || ''}">
+                  <span class="dt-val-text">${isDetailPasswordVisible ? escapeHtml(code.password) : '••••••••••••'}</span>
+                </div>
+                <button class="btn-field-action btn-toggle-pass" style="position:static;padding:0;width:32px;justify-content:center;">${SVG.EYE}</button>
               </div>
             </div>
 
             ${code.code ? `
-            <div class="dt-row">
+            <div class="dt-row" style="margin-top:20px;">
               <label class="dt-label">2FA Code</label>
               <div class="dt-click-box btn-copy" data-value="${code.code}">
-                <div class="flex-between">
-                  <span class="totp-large">${formatCode(code.code)}</span>
-                  <div class="timer-wrap" data-account-id="${code.accountId}">
+                <div class="flex-space">
+                  <span class="totp-txt">${formatCode(code.code)}</span>
+                  <div class="timer-box" data-account-id="${code.accountId}">
                     <svg viewBox="0 0 36 36">
                       <circle class="timer-bg" cx="18" cy="18" r="15"/>
                       <circle class="timer-prog" cx="18" cy="18" r="15" stroke-dasharray="94.2" stroke-dashoffset="0"/>
                     </svg>
-                    <span class="timer-txt">${code.remainingTime}</span>
+                    <span class="timer-num">${code.remainingTime}</span>
                   </div>
                 </div>
               </div>
@@ -212,9 +211,9 @@ function renderAccountDetail() {
         </div>
       </div>
       <footer class="app-footer">
-        <button class="btn-footer btn-footer-primary btn-autofill" style="flex:1;">${SVG.FLASH} Autofill</button>
+        <button class="btn-footer btn-footer-primary btn-autofill">${SVG.FLASH} Autofill</button>
         <button class="btn-footer btn-footer-secondary btn-edit-account">${SVG.EDIT} Edit</button>
-        <button class="btn-footer btn-footer-danger btn-delete-account">${SVG.TRASH}</button>
+        <button class="btn-footer btn-footer-danger btn-icon-only">${SVG.TRASH}</button>
       </footer>
     </div>
   `;
@@ -240,7 +239,7 @@ function attachDetailListeners() {
   });
 }
 
-/** Timer & Updates */
+/** Timer Logic */
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
   updateTimer();
@@ -254,13 +253,13 @@ function updateTimer() {
     if (code.remainingTime > 0) code.remainingTime--;
     else needsRefresh = true;
     if (code.accountId === selectedAccountId) {
-      const timerEl = document.querySelector(`.timer-wrap[data-account-id="${code.accountId}"]`);
+      const timerEl = document.querySelector(`.timer-box[data-account-id="${code.accountId}"]`);
       if (timerEl) {
         const period = code.period || 30;
         const offset = 94.2 - (code.remainingTime / period) * 94.2;
         timerEl.querySelector('.timer-prog').style.strokeDashoffset = offset;
-        timerEl.querySelector('.timer-txt').textContent = code.remainingTime;
-        const valEl = document.querySelector('.totp-large');
+        timerEl.querySelector('.timer-num').textContent = code.remainingTime;
+        const valEl = document.querySelector('.totp-txt');
         if (valEl) valEl.textContent = formatCode(code.code);
       }
     }
@@ -323,27 +322,20 @@ async function openAccountPage(accountId = null) {
   elements.accountPage.classList.remove('hidden');
   elements.mainScreen.classList.add('hidden');
   if (accountId) {
-    const account = accounts.find(a => a.id === accountId);
-    if (account) {
+    const a = accounts.find(a => a.id === accountId);
+    if (a) {
       elements.pageTitle.textContent = 'Edit Account';
-      elements.pageAccountIssuer.value = account.issuer || '';
-      elements.pageAccountUsername.value = account.username || '';
-      elements.pageAccountPassword.value = account.password || '';
-      if (account.secret) {
-        originalSecret = account.secret;
-        elements.pageAccountSecret.type = 'password';
-        elements.pageAccountSecret.value = '••••••••••••••••••••••••';
-      }
-      elements.pageAccountDigits.value = account.digits || 6;
-      elements.pageAccountPeriod.value = account.period || 30;
+      elements.pageAccountIssuer.value = a.issuer || '';
+      elements.pageAccountUsername.value = a.username || '';
+      elements.pageAccountPassword.value = a.password || '';
+      if (a.secret) { originalSecret = a.secret; elements.pageAccountSecret.type = 'password'; elements.pageAccountSecret.value = '••••••••••••••••••••••••'; }
+      elements.pageAccountDigits.value = a.digits || 6;
+      elements.pageAccountPeriod.value = a.period || 30;
     }
   } else {
     elements.pageTitle.textContent = 'Add Account';
     elements.accountFormPage.reset();
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) elements.pageAccountIssuer.value = tab.url;
-    } catch {}
+    try { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (tab) elements.pageAccountIssuer.value = tab.url; } catch {}
   }
 }
 
@@ -363,13 +355,7 @@ function stopQRScanner() { if (qrScanner) qrScanner.stop(); if (qrStream) qrStre
 
 async function handleQRCode(data) {
   const parsed = QRScanner.parseOTPAuth(data);
-  if (parsed && parsed.secret) {
-    stopQRScanner();
-    await openAccountPage();
-    elements.pageAccountSecret.value = parsed.secret;
-    elements.pageAccountIssuer.value = parsed.issuer || parsed.accountName;
-    elements.pageAccountUsername.value = parsed.accountName;
-  }
+  if (parsed && parsed.secret) { stopQRScanner(); await openAccountPage(); elements.pageAccountSecret.value = parsed.secret; elements.pageAccountIssuer.value = parsed.issuer || parsed.accountName; elements.pageAccountUsername.value = parsed.accountName; }
 }
 
 async function handleQRUpload(e) { const f = e.target.files[0]; if (f) { const s = new QRScanner(); const d = await s.scanFromFile(f); if (d) handleQRCode(d); } }
@@ -377,8 +363,7 @@ async function handleQRUpload(e) { const f = e.target.files[0]; if (f) { const s
 async function saveAccount(e) {
   e.preventDefault();
   let secret = elements.pageAccountSecret.value.trim();
-  if (editingAccountId && secret.startsWith('•')) secret = originalSecret;
-  else secret = secret.toUpperCase().replace(/\s/g, '');
+  if (editingAccountId && secret.startsWith('•')) secret = originalSecret; else secret = secret.toUpperCase().replace(/\s/g, '');
   const response = await sendMessage({
     type: editingAccountId ? 'UPDATE_ACCOUNT' : 'ADD_ACCOUNT',
     id: editingAccountId,
@@ -398,29 +383,21 @@ async function saveAccount(e) {
 
 async function deleteAccount(id) {
   const p = currentPassword || (await chrome.storage.session.get('masterPassword')).masterPassword;
-  if ((await sendMessage({ type: 'DELETE_ACCOUNT', id, password: p })).success) {
-    if (selectedAccountId === id) selectedAccountId = null;
-    loadCodes();
-  }
+  if ((await sendMessage({ type: 'DELETE_ACCOUNT', id, password: p })).success) { if (selectedAccountId === id) selectedAccountId = null; loadCodes(); }
 }
 
 async function autofillAccount(id) {
-  const account = accounts.find(a => a.id === id);
+  const a = accounts.find(a => a.id === id);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  let totpCode = '';
-  if (account.secret) {
-    const r = await sendMessage({ type: 'GENERATE_TOTP', accountId: id });
-    if (r.success) totpCode = r.data.code;
-  }
-  chrome.tabs.sendMessage(tab.id, { type: 'AUTOFILL_CREDENTIALS', data: { username: account.username || '', password: account.password || '', totpCode } }).catch(() => {
+  let code = ''; if (a.secret) { const r = await sendMessage({ type: 'GENERATE_TOTP', accountId: id }); if (r.success) code = r.data.code; }
+  chrome.tabs.sendMessage(tab.id, { type: 'AUTOFILL_CREDENTIALS', data: { username: a.username || '', password: a.password || '', totpCode: code } }).catch(() => {
     chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }).then(() => {
-      chrome.tabs.sendMessage(tab.id, { type: 'AUTOFILL_CREDENTIALS', data: { username: account.username || '', password: account.password || '', totpCode } });
+      chrome.tabs.sendMessage(tab.id, { type: 'AUTOFILL_CREDENTIALS', data: { username: a.username || '', password: a.password || '', totpCode: code } });
     });
   });
   window.close();
 }
 
-/** Utility Functions */
 function formatCode(c) { return c && c.length === 6 ? `${c.slice(0, 3)} ${c.slice(3)}` : c; }
 function copyToClipboard(t) { navigator.clipboard.writeText(t); }
 function sendMessage(m) { return new Promise(r => chrome.runtime.sendMessage(m, r)); }

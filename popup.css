@@ -26,12 +26,16 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 /* SVG Standard Icons */
 .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
 
+/* Specific Icon Sizes to avoid conflicts */
+.icon-back { width: 20px; height: 20px; margin: 0 auto; display: block; }
+.icon-trash { width: 16px; height: 16px; margin: 0 auto; display: block; }
+
 /* 2. Lock Screen (lk-) - Absolute Centering */
 .lock-overlay { position: absolute; inset: 0; background: var(--bg-main); z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; }
 .lock-box { width: 100%; max-width: 440px; padding: var(--padding); }
 .lock-icon-lg { font-size: 64px; margin-bottom: 16px; }
 .lock-form-row { display: flex; gap: 10px; margin-top: 24px; width: 100%; }
-.input-main { flex: 1; padding: 12px 14px; background: var(--bg-card); border: 0.5px solid var(--border); border-radius: 4px; color: white; font-size: 14px; outline: none; }
+.input-main { width: 100%; padding: 12px 14px; background: var(--bg-card); border: 0.5px solid var(--border); border-radius: 4px; color: white; font-size: 14px; outline: none; display: block; }
 .input-main:focus { border-color: var(--primary); }
 
 /* 3. Header Bar */
@@ -42,7 +46,7 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 .nav-count { font-size: 11px; color: var(--text-dim); }
 
 .nav-right-actions { display: flex; gap: 8px; }
-.btn-nav { background: var(--bg-card); border: 0.5px solid var(--border); color: white; padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px; }
+.btn-nav { background: var(--bg-card); border: 0.5px solid var(--border); color: white !important; padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px; }
 .btn-nav:hover { background: var(--bg-hover); border-color: var(--primary); }
 .btn-nav-primary { background: var(--primary); border: none; }
 .btn-nav svg { stroke: white; width: 14px; height: 14px; }
@@ -90,10 +94,10 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
   height: 60px; border-top: 0.5px solid var(--border); background: var(--bg-alt); 
   display: flex; align-items: center; justify-content: center; gap: 12px; padding: 0 20px; flex-shrink: 0; 
 }
-.btn-footer { padding: 10px 20px; font-size: 14px; min-width: 100px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.btn-footer { padding: 10px 20px; font-size: 14px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
 .btn-footer-primary { background: var(--primary); color: white; }
 .btn-footer-secondary { background: var(--bg-card); color: white; border: 0.5px solid var(--border); }
-.btn-footer-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn-footer-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 0; min-width: 40px; height: 36px; justify-content: center; }
 .btn-footer-danger:hover { background: rgba(239, 83, 80, 0.1); }
 
 /* Overlay Pages (Add/Edit) */
@@ -101,9 +105,9 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 .page-header { height: 52px; padding: 0 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 16px; background: var(--bg-alt); flex-shrink: 0; }
 .page-body { flex: 1; overflow-y: auto; padding: 24px 32px; }
 
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; width: 100%; }
 .form-input-wrap { position: relative; display: flex; align-items: center; width: 100%; }
-.btn-field-action { position: absolute; right: 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; }
+.btn-field-action { position: absolute; right: 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
 /* Timer */
 .timer-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
@@ -118,3 +122,6 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 .flex-between { display: flex; align-items: center; justify-content: space-between; flex: 1; }
 .error-text { color: var(--danger); font-size: 13px; margin-top: 10px; }
 .hero-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.3; }
+
+.btn-icon-only { width: 36px; height: 36px; padding: 0; justify-content: center; }
+.btn-icon-only svg { width: 20px; height: 20px; }
