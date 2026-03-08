@@ -12,7 +12,7 @@
     <div class="lock-box">
       <div class="lock-icon-lg">🔒</div>
       <h1 style="font-size:24px;margin-bottom:8px;color:white;">2FA Manager</h1>
-      <p style="color:var(--text-dim);font-size:14px;">Unlock your secure vault</p>
+      <p id="lock-subtitle" style="color:var(--text-dim);font-size:14px;">Unlock your secure vault</p>
       <form id="unlock-form">
         <div class="lock-form-row">
           <input type="password" id="unlock-password" class="input-main" placeholder="Master password" required>
@@ -84,7 +84,37 @@
         <div style="display:flex;gap:12px;justify-content:center;">
           <button id="empty-add-btn" class="btn-footer btn-footer-primary">Add Account</button>
           <button id="empty-scan-btn" class="btn-footer btn-footer-secondary">Scan QR</button>
+          <button id="empty-import-btn" class="btn-footer btn-footer-secondary">Import</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Import Overlay Page -->
+  <div id="import-page" class="page-overlay hidden">
+    <div class="page-header">
+      <button id="back-to-main-import" class="btn-footer btn-footer-secondary" style="width:2.5rem;height:28px;padding:0;min-width:28px;justify-content:center;">
+        <svg class="svg-base icon-back" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 style="font-size:16px;font-weight:700;color:white;">Import Vault</h2>
+    </div>
+    <div class="page-body" style="text-align:center;">
+      <p style="color:var(--text-dim); margin-bottom:24px;">Restore your vault from an encrypted backup file.</p>
+      
+      <input type="file" id="import-file-input" accept=".json" class="hidden">
+      <button id="select-import-file-btn" class="btn-footer btn-footer-primary" style="margin: 0 auto 24px; height:44px; padding: 0 24px;">
+        📂 Select Backup File
+      </button>
+
+      <div id="import-verify-section" class="hidden" style="margin-top:32px; border-top: 1px solid var(--border); padding-top:24px;">
+        <p style="color:var(--text-dim); margin-bottom:16px;">Verify your master password to decrypt and import:</p>
+        <div class="lock-form-row" style="margin-top:0;">
+          <input type="password" id="import-master-password" class="input-main" placeholder="Vault password">
+          <button id="confirm-import-btn" class="btn-footer btn-footer-primary" style="height:40px;">
+            Import
+          </button>
+        </div>
+        <p id="import-error" class="error-text"></p>
       </div>
     </div>
   </div>

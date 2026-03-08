@@ -14,6 +14,7 @@ let qrStream = null;
 let qrScanner = null;
 let originalSecret = null;
 let isDetailPasswordVisible = false;
+let pendingImportData = null; // State for import
 
 // DOM Elements
 const elements = {
@@ -56,7 +57,18 @@ const elements = {
   toast: document.getElementById('toast'),
   toastMessage: document.getElementById('toast-message'),
   emptyDetailState: document.getElementById('empty-detail-state'),
-  accountDetailView: document.getElementById('account-detail-view')
+  accountDetailView: document.getElementById('account-detail-view'),
+  // New elements for initialization and import
+  lockSubtitle: document.getElementById('lock-subtitle'),
+  emptyImportBtn: document.getElementById('empty-import-btn'),
+  importPage: document.getElementById('import-page'),
+  backToMainImport: document.getElementById('back-to-main-import'),
+  selectImportBtn: document.getElementById('select-import-file-btn'),
+  importFileInput: document.getElementById('import-file-input'),
+  importVerifySection: document.getElementById('import-verify-section'),
+  importMasterPassword: document.getElementById('import-master-password'),
+  confirmImportBtn: document.getElementById('confirm-import-btn'),
+  importError: document.getElementById('import-error')
 };
 
 // SVG Assets
@@ -73,8 +85,22 @@ const SVG = {
 /** Initialize */
 async function init() {
   const res = await sendMessage({ type: 'GET_STATUS' });
-  if (res.unlocked) showMainScreen();
-  else showLockScreen();
+  
+  if (res.unlocked) {
+    showMainScreen();
+  } else {
+    // Check if vault exists to update UI
+    if (!res.vaultExists) {
+      if (elements.lockSubtitle) elements.lockSubtitle.textContent = 'Create a master password for your new vault';
+      const unlockBtn = elements.unlockForm.querySelector('button');
+      if (unlockBtn) {
+        unlockBtn.innerHTML = '<svg class="icon" style="width:18px;height:18px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Create Vault';
+      }
+    } else {
+      if (elements.lockSubtitle) elements.lockSubtitle.textContent = 'Unlock your secure vault';
+    }
+    showLockScreen();
+  }
   setupEventListeners();
 }
 
@@ -120,7 +146,7 @@ function renderCodes(filter = '') {
     return `
       <div class="item-acc ${selectedAccountId === code.accountId ? 'active' : ''}" data-account-id="${code.accountId}">
         <div class="item-acc-icon" style="background: ${code.iconColor}">${char}</div>
-        <div style="flex:1;min-width:0;">
+        <div class="item-acc-info" style="flex:1;min-width:0;">
           <div class="item-acc-title">${escapeHtml(sName)}</div>
           <div class="item-acc-sub">${escapeHtml(code.username || code.accountName || '')}</div>
         </div>
@@ -157,7 +183,7 @@ function renderAccountDetail() {
         <div class="dt-content-max">
           <header class="dt-header">
             <div class="dt-header-icon" style="background: ${code.iconColor}">${char}</div>
-            <div style="flex:1;min-width:0;">
+            <div class="dt-header-info">
               <h2 class="dt-header-title">${escapeHtml(sName)}</h2>
               <a href="${code.issuer}" target="_blank" class="dt-header-link" title="${escapeHtml(code.issuer)}">${escapeHtml(dUrl)} ${SVG.LINK}</a>
             </div>
@@ -172,18 +198,18 @@ function renderAccountDetail() {
             <div class="dt-row">
               <label class="dt-label">Username</label>
               <div class="dt-click-box btn-copy" data-value="${code.username || ''}">
-                <div class="dt-text">
+                <div class="dt-inner-val">
                   ${SVG.USER}
-                  ${escapeHtml(code.username || 'Not set')}
+                  <span class="dt-val-text">${escapeHtml(code.username || 'Not set')}</span>
                 </div>
-                <div class="box-action-btn">${SVG.COPY}</div>
+                ${SVG.COPY}
               </div>
             </div>
 
             <div class="dt-row">
               <label class="dt-label">Password</label>
               <div class="dt-click-box">
-                <div class="dt-text btn-copy" data-value="${code.password || ''}">
+                <div class="dt-inner-val btn-copy" data-value="${code.password || ''}" style="flex: 1;">
                   ${isDetailPasswordVisible ? escapeHtml(code.password) : '••••••••••••'}
                 </div>
                 <button class="box-action-btn btn-toggle-pass">${SVG.EYE}</button>
@@ -194,14 +220,14 @@ function renderAccountDetail() {
             <div class="dt-row" style="margin-top:20px;">
               <label class="dt-label">2FA Code</label>
               <div class="dt-click-box btn-copy" data-value="${code.code}">
-                <div class="flex-space">
-                  <span class="totp-txt">${formatCode(code.code)}</span>
-                  <div class="timer-box" data-account-id="${code.accountId}">
+                <div class="flex-between">
+                  <span class="totp-large">${formatCode(code.code)}</span>
+                  <div class="timer-wrap" data-account-id="${code.accountId}">
                     <svg viewBox="0 0 36 36">
                       <circle class="timer-bg" cx="18" cy="18" r="15"/>
                       <circle class="timer-prog" cx="18" cy="18" r="15" stroke-dasharray="94.2" stroke-dashoffset="0"/>
                     </svg>
-                    <span class="timer-num">${code.remainingTime}</span>
+                    <span class="timer-txt">${code.remainingTime}</span>
                   </div>
                 </div>
               </div>
@@ -253,13 +279,13 @@ function updateTimer() {
     if (code.remainingTime > 0) code.remainingTime--;
     else needsRefresh = true;
     if (code.accountId === selectedAccountId) {
-      const timerEl = document.querySelector(`.timer-box[data-account-id="${code.accountId}"]`);
+      const timerEl = document.querySelector(`.timer-wrap[data-account-id="${code.accountId}"]`);
       if (timerEl) {
         const period = code.period || 30;
         const offset = 94.2 - (code.remainingTime / period) * 94.2;
         timerEl.querySelector('.timer-prog').style.strokeDashoffset = offset;
-        timerEl.querySelector('.timer-num').textContent = code.remainingTime;
-        const valEl = document.querySelector('.totp-txt');
+        timerEl.querySelector('.timer-txt').textContent = code.remainingTime;
+        const valEl = document.querySelector('.totp-large');
         if (valEl) valEl.textContent = formatCode(code.code);
       }
     }
@@ -298,8 +324,11 @@ function setupEventListeners() {
   elements.searchInput.addEventListener('input', (e) => renderCodes(e.target.value));
   elements.emptyAddBtn.addEventListener('click', () => openAccountPage());
   elements.emptyScanBtn.addEventListener('click', openQRPage);
+  elements.emptyImportBtn?.addEventListener('click', openImportPage);
+
   elements.backToMain.addEventListener('click', closeAccountPage);
   elements.backToMainQr.addEventListener('click', closeQRPage);
+  elements.backToMainImport?.addEventListener('click', closeImportPage);
   elements.pageCancelBtn.addEventListener('click', closeAccountPage);
   elements.startScanBtn.addEventListener('click', startQRScanner);
   elements.qrUpload.addEventListener('change', handleQRUpload);
@@ -313,6 +342,44 @@ function setupEventListeners() {
     const type = elements.pageAccountSecret.type === 'password' ? 'text' : 'password';
     elements.pageAccountSecret.type = type;
   });
+
+  // Import Listeners
+  elements.selectImportBtn?.addEventListener('click', () => elements.importFileInput.click());
+  elements.importFileInput?.addEventListener('change', handleImportFile);
+  elements.confirmImportBtn?.addEventListener('click', processVaultImport);
+}
+
+/** Import Flow */
+function openImportPage() { elements.importPage.classList.remove('hidden'); elements.mainScreen.classList.add('hidden'); }
+function closeImportPage() { 
+  elements.importPage.classList.add('hidden'); elements.mainScreen.classList.remove('hidden'); 
+  pendingImportData = null; elements.importVerifySection.classList.add('hidden');
+}
+
+async function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.accounts || !data.masterHash) { showToast('Invalid backup file'); return; }
+    pendingImportData = data;
+    elements.importVerifySection.classList.remove('hidden');
+    elements.importMasterPassword.focus();
+  } catch { showToast('Error reading file'); }
+}
+
+async function processVaultImport() {
+  const password = elements.importMasterPassword.value;
+  if (!password) return;
+  const res = await sendMessage({ type: 'IMPORT_VAULT', data: pendingImportData, password });
+  if (res.success) {
+    currentPassword = password;
+    await chrome.storage.session.set({ masterPassword: password });
+    closeImportPage();
+    loadCodes();
+    showToast('Vault restored!');
+  } else { elements.importError.textContent = res.error || 'Import failed'; }
 }
 
 /** Account Page Logic */
@@ -344,8 +411,7 @@ function openQRPage() { elements.qrPage.classList.remove('hidden'); elements.mai
 function closeQRPage() { elements.qrPage.classList.add('hidden'); elements.mainScreen.classList.remove('hidden'); stopQRScanner(); }
 
 async function startQRScanner() {
-  qrScanner = new QRScanner();
-  await qrScanner.init(elements.qrVideo);
+  qrScanner = new QRScanner(); await qrScanner.init(elements.qrVideo);
   qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
   elements.qrVideo.srcObject = qrStream;
   elements.qrVideo.onloadedmetadata = () => { elements.qrVideo.play(); qrScanner.start(handleQRCode); };

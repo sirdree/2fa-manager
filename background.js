@@ -567,7 +567,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
         case 'GET_STATUS':
-          sendResponse({ unlocked: masterPasswordUnlocked });
+          const { masterHash } = await chrome.storage.local.get({ masterHash: null });
+          sendResponse({ 
+            unlocked: masterPasswordUnlocked,
+            vaultExists: !!masterHash 
+          });
           break;
 
         case 'RESET_VAULT':
