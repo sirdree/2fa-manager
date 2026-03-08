@@ -1,6 +1,5 @@
 /**
  * Background Service Worker for 2FA Manager Extension
- * Restored Cryptographic Core and Standardized Storage.
  */
 
 // Import TOTP library
@@ -30,101 +29,53 @@ let unlockedAccounts = null;
 let masterPasswordUnlocked = false;
 
 /* ==========================================================================
-   CRYPTOGRAPHY CORE (Restored)
+   CRYPTOGRAPHY CORE
    ========================================================================== */
 
-/**
- * Derive encryption key from password
- */
 async function deriveKey(password, salt) {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveKey']
+    'raw', encoder.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
   );
-
   return crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: encoder.encode(salt),
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
+    { name: 'PBKDF2', salt: encoder.encode(salt), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
   );
 }
 
-/**
- * Hash password for storage verification
- */
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + '2fa-manager-salt');
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Encrypt data
- */
 async function encryptData(data, password) {
   const salt = '2fa-manager-encryption-salt';
   const key = await deriveKey(password, salt);
   const encoder = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12));
-
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoder.encode(JSON.stringify(data))
-  );
-
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(JSON.stringify(data)));
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv);
   combined.set(new Uint8Array(encrypted), iv.length);
-
   let binary = '';
-  for (let i = 0; i < combined.byteLength; i++) {
-    binary += String.fromCharCode(combined[i]);
-  }
+  for (let i = 0; i < combined.byteLength; i++) binary += String.fromCharCode(combined[i]);
   return btoa(binary);
 }
 
-/**
- * Decrypt data
- */
 async function decryptData(encryptedData, password) {
   try {
     const salt = '2fa-manager-encryption-salt';
     const key = await deriveKey(password, salt);
-    
     const binary = atob(encryptedData);
     const combined = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      combined[i] = binary.charCodeAt(i);
-    }
-
+    for (let i = 0; i < binary.length; i++) combined[i] = binary.charCodeAt(i);
     const iv = combined.slice(0, 12);
     const encrypted = combined.slice(12);
-
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      encrypted
-    );
-
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
     return JSON.parse(new TextDecoder().decode(decrypted));
-  } catch (error) {
-    console.error('Decryption error:', error);
-    return null;
-  }
+  } catch (error) { return null; }
 }
 
 /* ==========================================================================
@@ -173,10 +124,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ unlocked: masterPasswordUnlocked, vaultExists: !!data[KEYS.MASTER_HASH] });
           break;
 
-        case 'UNLOCK_VAULT':
-          sendResponse(await unlockVault(message.password));
-          break;
-
+        case 'UNLOCK_VAULT': sendResponse(await unlockVault(message.password)); break;
         case 'LOCK_VAULT':
           unlockedAccounts = null;
           masterPasswordUnlocked = false;
@@ -226,6 +174,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'RESET_VAULT':
           await chrome.storage.local.clear();
+          await disableSync();
           unlockedAccounts = null;
           masterPasswordUnlocked = false;
           sendResponse({ success: true });
@@ -268,12 +217,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse(mRes);
           break;
 
+        case 'GET_AUTO_SYNC_SETTINGS': sendResponse({ success: true, settings: await getAutoSyncSettings() }); break;
+        case 'SAVE_AUTO_SYNC_SETTINGS': 
+          await saveAutoSyncSettings(message.settings);
+          await setupAutoSyncAlarm(message.settings);
+          sendResponse({ success: true });
+          break;
+
         default: sendResponse({ success: false, error: 'Unknown action' });
       }
     } catch (e) { sendResponse({ success: false, error: e.message }); }
     return true;
   })();
   return true;
+});
+
+async function setupAutoSyncAlarm(s) {
+  try {
+    await chrome.alarms.clear('autoSync');
+    if (s.autoSyncEnabled && s.autoSyncInterval > 0) {
+      const interval = Math.max(1, s.autoSyncInterval);
+      chrome.alarms.create('autoSync', { delayInMinutes: interval, periodInMinutes: interval });
+    }
+  } catch (e) {}
+}
+
+chrome.alarms.onAlarm.addListener(async (a) => {
+  if (a.name === 'autoSync') {
+    const state = await getSyncState();
+    if (state.enabled) await uploadVaultToSync();
+  }
 });
 
 chrome.runtime.onInstalled.addListener(async () => {

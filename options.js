@@ -78,8 +78,12 @@ async function init() {
     }
 
     elements.passwordModal.classList.add('hidden');
-    await loadSettings();
-    if (typeof initCloudSync === 'function') await initCloudSync();
+    
+    // Load all settings in parallel
+    await Promise.all([
+      loadSettings(),
+      typeof initCloudSync === 'function' ? initCloudSync() : Promise.resolve()
+    ]);
   } else {
     window.location.href = 'popup.html';
   }

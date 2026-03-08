@@ -202,4 +202,7 @@ async function getAutoSyncSettings() {
   const r = await chrome.storage.local.get('2fa_sync_settings'); 
   return r['2fa_sync_settings'] || { autoSyncEnabled: false, autoSyncInterval: 30 }; 
 }
-async function saveAutoSyncSettings(s) { await chrome.storage.local.set({ '2fa_sync_settings': s }); return { success: true }; }
+async function saveAutoSyncSettings(s) { 
+  await chrome.storage.local.set({ '2fa_sync_settings': s }); 
+  return { success: true }; 
+}

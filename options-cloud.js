@@ -1,5 +1,5 @@
 /**
- * Chrome Sync UI Integration - Bulletproof
+ * Chrome Sync UI Integration - Standard Refactor
  */
 
 let syncState = null;
@@ -7,6 +7,7 @@ let pendingSyncDownload = null;
 let syncStateRefreshInterval = null;
 
 async function initCloudSync() {
+  console.log('Initializing Cloud Sync UI...');
   await loadSyncState();
   await loadAutoSyncSettings();
   setupSyncEventListeners();
@@ -35,7 +36,6 @@ function setupSyncEventListeners() {
   document.getElementById('upload-sync-btn')?.addEventListener('click', uploadToSync);
   document.getElementById('download-sync-btn')?.addEventListener('click', downloadFromSync);
   
-  // Conflict resolution
   document.getElementById('merge-both-btn')?.addEventListener('click', mergeBothVersions);
   document.getElementById('use-cloud-version-btn')?.addEventListener('click', useCloudVersion);
   document.getElementById('keep-local-version-btn')?.addEventListener('click', keepLocalVersion);
@@ -52,7 +52,6 @@ function updateSyncUI() {
 
   const emailSpan = document.querySelector('#sync-account-info span');
   if (emailSpan) {
-    // Simple detection: if storage sync is working, Google Sync is active
     emailSpan.textContent = isEnabled ? 'Google Sync Active' : 'Chrome Sync Disabled';
   }
 
@@ -63,26 +62,42 @@ function updateSyncUI() {
   }
 
   const storageUsed = document.getElementById('sync-storage-used');
-  if (storageUsed) storageUsed.textContent = isEnabled ? `${(syncState.bytesUsed / 1024).toFixed(1)} KB (${syncState.percentUsed || 0}%)` : '--';
+  if (storageUsed) {
+    storageUsed.textContent = isEnabled ? `${(syncState.bytesUsed / 1024).toFixed(1)} KB (${syncState.percentUsed || 0}%)` : '--';
+  }
 
   const lastTime = document.getElementById('sync-last-time');
-  if (lastTime) lastTime.textContent = (isEnabled && syncState.lastSyncTime) ? new Date(syncState.lastSyncTime).toLocaleString() : 'Never';
+  if (lastTime) {
+    lastTime.textContent = (isEnabled && syncState.lastSyncTime) ? new Date(syncState.lastSyncTime).toLocaleString() : 'Never';
+  }
 
   document.getElementById('enable-sync-btn')?.classList.toggle('hidden', isEnabled);
   document.getElementById('disable-sync-btn')?.classList.toggle('hidden', !isEnabled);
-  document.getElementById('sync-actions-card').style.display = isEnabled ? 'block' : 'none';
-  document.getElementById('auto-sync-settings-card').style.display = isEnabled ? 'block' : 'none';
+  
+  const autoSyncCard = document.getElementById('auto-sync-settings-card');
+  if (autoSyncCard) autoSyncCard.style.display = isEnabled ? 'block' : 'none';
+  
+  const actionsCard = document.getElementById('sync-actions-card');
+  if (actionsCard) actionsCard.style.display = isEnabled ? 'block' : 'none';
 }
 
 async function enableChromeSync() {
   const res = await sendMessage({ type: 'ENABLE_SYNC' });
-  if (res.success) { showToast('✓ Chrome Sync enabled!'); await loadSyncState(); updateSyncUI(); }
+  if (res.success) { 
+    if (typeof showToast === 'function') showToast('✓ Chrome Sync enabled!'); 
+    await loadSyncState(); 
+    updateSyncUI(); 
+  }
 }
 
 async function disableChromeSync() {
   if (!confirm('Disable Chrome Sync? Local data is safe.')) return;
   const res = await sendMessage({ type: 'DISABLE_SYNC' });
-  if (res.success) { showToast('✓ Chrome Sync disabled'); await loadSyncState(); updateSyncUI(); }
+  if (res.success) { 
+    if (typeof showToast === 'function') showToast('✓ Chrome Sync disabled'); 
+    await loadSyncState(); 
+    updateSyncUI(); 
+  }
 }
 
 async function uploadToSync() {
@@ -91,10 +106,12 @@ async function uploadToSync() {
   try {
     const res = await sendMessage({ type: 'UPLOAD_TO_SYNC' });
     if (res.success) {
-      showToast(`✓ Vault uploaded! (${res.accountCount} accounts)`);
+      if (typeof showToast === 'function') showToast(`✓ Vault uploaded! (${res.accountCount} accounts)`);
       await loadSyncState();
       updateSyncUI();
-    } else showToast('Upload failed: ' + res.error);
+    } else {
+      if (typeof showToast === 'function') showToast('Upload failed: ' + res.error);
+    }
   } finally { if (btn) { btn.disabled = false; btn.textContent = '⬆️ Upload to Cloud'; } }
 }
 
@@ -105,9 +122,10 @@ async function downloadFromSync() {
     const res = await sendMessage({ type: 'DOWNLOAD_FROM_SYNC' });
     if (res.success) {
       pendingSyncDownload = res.data;
-      // Force conflict check logic here or just show password modal
       showPasswordModal();
-    } else showToast('Download failed: ' + res.error);
+    } else {
+      if (typeof showToast === 'function') showToast('Download failed: ' + res.error);
+    }
   } finally { if (btn) { btn.disabled = false; btn.textContent = '⬇️ Download from Cloud'; } }
 }
 
@@ -122,6 +140,63 @@ async function checkCloudData() {
   }
 }
 
+/** Auto-Sync Logic */
+async function loadAutoSyncSettings() {
+  const res = await sendMessage({ type: 'GET_AUTO_SYNC_SETTINGS' });
+  console.log('Loaded Auto-Sync Settings:', res);
+  if (res.success && res.settings) {
+    const s = res.settings;
+    const enabledEl = document.getElementById('auto-sync-enabled');
+    const intervalEl = document.getElementById('auto-sync-interval');
+    const groupEl = document.getElementById('auto-sync-interval-group');
+
+    if (enabledEl) enabledEl.checked = !!s.autoSyncEnabled;
+    if (intervalEl) intervalEl.value = s.autoSyncInterval || 30;
+    if (groupEl) groupEl.style.display = s.autoSyncEnabled ? 'block' : 'none';
+  }
+}
+
+async function saveAutoSyncSettings(notify = true) {
+  const enabledEl = document.getElementById('auto-sync-enabled');
+  const intervalEl = document.getElementById('auto-sync-interval');
+  if (!enabledEl || !intervalEl) return;
+
+  const s = {
+    autoSyncEnabled: enabledEl.checked,
+    autoSyncInterval: parseInt(intervalEl.value)
+  };
+
+  console.log('Saving Auto-Sync Settings:', s);
+  const res = await sendMessage({ type: 'SAVE_AUTO_SYNC_SETTINGS', settings: s });
+  
+  if (res.success && notify) {
+    const msg = s.autoSyncEnabled ? `✓ Auto-sync enabled (${s.autoSyncInterval}m)` : '✓ Auto-sync disabled';
+    if (typeof showToast === 'function') showToast(msg);
+  }
+}
+
+function setupAutoSyncEventListeners() {
+  const enabledEl = document.getElementById('auto-sync-enabled');
+  const intervalEl = document.getElementById('auto-sync-interval');
+  const groupEl = document.getElementById('auto-sync-interval-group');
+
+  if (enabledEl) {
+    enabledEl.addEventListener('change', async () => {
+      console.log('Auto-sync toggle changed');
+      if (groupEl) groupEl.style.display = enabledEl.checked ? 'block' : 'none';
+      await saveAutoSyncSettings(true);
+    });
+  }
+
+  if (intervalEl) {
+    intervalEl.addEventListener('change', async () => {
+      console.log('Auto-sync interval changed');
+      await saveAutoSyncSettings(true);
+    });
+  }
+}
+
+/** Modals */
 function showPasswordModal() {
   if (typeof elements !== 'undefined' && elements.importModal) {
     elements.importError.textContent = '';
@@ -143,37 +218,10 @@ async function applySyncedVault(password) {
   if (res.success) {
     pendingSyncDownload = null;
     window.isMergingVaults = false;
-    showToast('✓ Vault restored from cloud!');
-    // Redirect or reload to show data
-    location.reload();
+    if (typeof showToast === 'function') showToast('✓ Vault restored from cloud!');
+    setTimeout(() => location.reload(), 1000);
   }
   return res;
 }
 
 function hasPendingSyncDownload() { return pendingSyncDownload !== null; }
-
-async function loadAutoSyncSettings() {
-  const res = await sendMessage({ type: 'GET_AUTO_SYNC_SETTINGS' });
-  if (res.success) {
-    const s = res.settings;
-    if (document.getElementById('auto-sync-enabled')) document.getElementById('auto-sync-enabled').checked = s.autoSyncEnabled || false;
-    if (document.getElementById('auto-sync-interval')) document.getElementById('auto-sync-interval').value = s.autoSyncInterval || 30;
-    document.getElementById('auto-sync-interval-group').style.display = s.autoSyncEnabled ? 'block' : 'none';
-  }
-}
-
-async function saveAutoSyncSettings() {
-  const s = {
-    autoSyncEnabled: document.getElementById('auto-sync-enabled').checked,
-    autoSyncInterval: parseInt(document.getElementById('auto-sync-interval').value)
-  };
-  await sendMessage({ type: 'SAVE_AUTO_SYNC_SETTINGS', settings: s });
-}
-
-function setupAutoSyncEventListeners() {
-  document.getElementById('auto-sync-enabled')?.addEventListener('change', () => {
-    document.getElementById('auto-sync-interval-group').style.display = document.getElementById('auto-sync-enabled').checked ? 'block' : 'none';
-    saveAutoSyncSettings();
-  });
-  document.getElementById('auto-sync-interval')?.addEventListener('change', saveAutoSyncSettings);
-}
