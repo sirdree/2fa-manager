@@ -61,6 +61,7 @@ const elements = {
   // New elements for initialization and import
   lockSubtitle: document.getElementById('lock-subtitle'),
   emptyImportBtn: document.getElementById('empty-import-btn'),
+  emptySettingsBtn: document.getElementById('empty-settings-btn'),
   importPage: document.getElementById('import-page'),
   backToMainImport: document.getElementById('back-to-main-import'),
   selectImportBtn: document.getElementById('select-import-file-btn'),
@@ -325,6 +326,7 @@ function setupEventListeners() {
   elements.emptyAddBtn.addEventListener('click', () => openAccountPage());
   elements.emptyScanBtn.addEventListener('click', openQRPage);
   elements.emptyImportBtn?.addEventListener('click', openImportPage);
+  elements.emptySettingsBtn?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
   elements.backToMain.addEventListener('click', closeAccountPage);
   elements.backToMainQr.addEventListener('click', closeQRPage);
@@ -376,8 +378,12 @@ async function processVaultImport() {
   if (res.success) {
     currentPassword = password;
     await chrome.storage.session.set({ masterPassword: password });
+    
     closeImportPage();
-    loadCodes();
+    
+    // Refresh initialization to load new data and show main screen
+    await init();
+    
     showToast('Vault restored!');
   } else { elements.importError.textContent = res.error || 'Import failed'; }
 }

@@ -169,7 +169,13 @@
 
         <!-- Sync Status -->
         <div class="settings-card">
-          <h3>Sync Status</h3>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <h3>Sync Status</h3>
+            <div id="sync-account-info" class="status-email" style="text-align: right; margin: 0;">
+              <span style="display: block; font-weight: 600; color: var(--text);">Detecting account...</span>
+              <a href="chrome://settings/people" target="_blank" style="font-size: 11px; color: var(--secondary); text-decoration: none;">Change Account</a>
+            </div>
+          </div>
 
           <div class="sync-status-grid">
             <div class="sync-status-item">
@@ -188,43 +194,43 @@
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: 16px;">
+          <div class="form-group" style="margin-top: 16px; display: flex; gap: 12px;">
             <button type="button" class="btn btn-primary" id="enable-sync-btn">
               Enable Sync
             </button>
             <button type="button" class="btn btn-secondary hidden" id="disable-sync-btn">
               Disable Sync
             </button>
+            <button type="button" class="btn btn-secondary" id="check-sync-data-btn">
+              🔍 Check for Cloud Data
+            </button>
+          </div>
+
+          <div id="sync-debug-info" class="cloud-info-box hidden" style="margin-top: 16px; background: rgba(255,255,255,0.05); border-left-color: var(--text-dim);">
+            <strong>System Sync Info:</strong>
+            <div id="sync-debug-text" style="font-family: monospace; font-size: 11px; margin-top: 8px; white-space: pre-wrap;"></div>
           </div>
         </div>
 
         <!-- Sync Actions -->
         <div class="settings-card" id="sync-actions-card" style="display: none;">
           <h3>Sync Actions</h3>
+          <p class="description" style="margin-bottom: 20px;">Manual control for your cloud backup.</p>
 
-          <div class="cloud-sync-actions">
-            <div class="sync-action-item">
-              <button type="button" class="btn btn-secondary" id="upload-sync-btn">
+          <div style="display: flex; gap: 16px;">
+            <div style="flex: 1;">
+              <button type="button" class="btn btn-primary" id="upload-sync-btn" style="width: 100%; justify-content: center;">
                 ⬆️ Upload to Cloud
               </button>
-              <div class="sync-timestamp">Backup your current vault to Chrome sync</div>
+              <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">Replace cloud with local</p>
             </div>
 
-            <div class="sync-action-item">
-              <button type="button" class="btn btn-secondary" id="download-sync-btn">
+            <div style="flex: 1;">
+              <button type="button" class="btn btn-secondary" id="download-sync-btn" style="width: 100%; justify-content: center; border-color: var(--secondary); color: var(--secondary);">
                 ⬇️ Download from Cloud
               </button>
-              <div class="sync-timestamp">Restore vault from Chrome sync</div>
+              <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">Replace local with cloud</p>
             </div>
-          </div>
-
-          <div class="cloud-info-box" style="margin-top: 16px;">
-            <strong>⚠️ Important:</strong>
-            <ul style="margin: 8px 0 0 20px; font-size: 0.9rem;">
-              <li><strong>Upload:</strong> Replaces cloud backup with local vault</li>
-              <li><strong>Download:</strong> Replaces local vault with cloud backup</li>
-              <li>Make sure to use the same master password on all devices!</li>
-            </ul>
           </div>
         </div>
 

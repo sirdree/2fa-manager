@@ -218,11 +218,21 @@ async function importAccounts(file) {
 
 async function processImport(password) {
   if (!pendingImportFile) return;
-  const response = await sendMessage({ type: 'IMPORT_VAULT', data: pendingImportFile, password });
+  
+  const response = await sendMessage({ 
+    type: 'IMPORT_VAULT', 
+    data: pendingImportFile, 
+    password 
+  });
+
   if (response.success) {
     pendingImportFile = null;
     elements.importModal.classList.add('hidden');
-    showToast('Vault imported!');
+    
+    // Refresh the entire page state to show imported data
+    await init();
+    
+    showToast('Vault imported successfully!');
   } else {
     elements.importError.textContent = response.error || 'Import failed';
   }
@@ -265,7 +275,24 @@ function setupEventListeners() {
 
   [elements.autoLock, elements.lockTimeout, elements.clipboardTimeout, elements.showNotifications, elements.defaultDigits, elements.defaultPeriod].forEach(el => el.addEventListener('change', saveSettings));
 
-  elements.importPasswordForm.addEventListener('submit', (e) => { e.preventDefault(); processImport(elements.importMasterPassword.value); });
+  elements.importPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = elements.importMasterPassword.value;
+
+    // Check if this is a cloud sync download (from options-cloud.js)
+    if (typeof hasPendingSyncDownload === 'function' && hasPendingSyncDownload()) {
+      const result = await applySyncedVault(password);
+      if (result.success) {
+        elements.importModal.classList.add('hidden');
+        elements.importError.textContent = '';
+      } else {
+        elements.importError.textContent = result.error || 'Failed to apply synced vault';
+      }
+    } else if (pendingImportFile) {
+      // Handle local file import
+      processImport(password);
+    }
+  });
   elements.cancelImport.addEventListener('click', () => elements.importModal.classList.add('hidden'));
   elements.cancelDelete.addEventListener('click', () => elements.deleteModal.classList.add('hidden'));
 }
