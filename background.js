@@ -28,6 +28,34 @@ const DEFAULT_SETTINGS = {
 let unlockedAccounts = null;
 let masterPasswordUnlocked = false;
 
+/**
+ * Rehydrate State (Restore session after SW suspension or browser restart)
+ */
+async function rehydrateState() {
+  const settingsData = await chrome.storage.local.get(KEYS.SETTINGS);
+  const settings = settingsData[KEYS.SETTINGS] || DEFAULT_SETTINGS;
+  
+  // Only auto-unlock if auto-lock is DISABLED
+  if (!settings.autoLock) {
+    const sessionData = await chrome.storage.session.get('masterPassword');
+    const persistentPassData = await chrome.storage.local.get('persistentPassword');
+    const password = sessionData.masterPassword || persistentPassData.persistentPassword;
+    
+    if (password) {
+      console.log('Auto-unlocking vault from persisted state...');
+      const res = await unlockVault(password);
+      if (res.success) {
+        console.log('Vault rehydrated successfully.');
+        chrome.action.setBadgeText({ text: '🔓' });
+        chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
+      }
+    }
+  }
+}
+
+// Call rehydration on startup
+rehydrateState();
+
 /* ==========================================================================
    CRYPTOGRAPHY CORE
    ========================================================================== */
@@ -106,6 +134,14 @@ async function unlockVault(password) {
   unlockedAccounts = accounts;
   masterPasswordUnlocked = true;
   await chrome.storage.session.set({ masterPassword: password });
+
+  // Persist if auto-lock is disabled
+  const settingsData = await chrome.storage.local.get(KEYS.SETTINGS);
+  const settings = settingsData[KEYS.SETTINGS] || DEFAULT_SETTINGS;
+  if (!settings.autoLock) {
+    await chrome.storage.local.set({ persistentPassword: password });
+  }
+
   chrome.action.setBadgeText({ text: '🔓' });
   chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
   return { success: true };
@@ -129,6 +165,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           unlockedAccounts = null;
           masterPasswordUnlocked = false;
           await chrome.storage.session.remove('masterPassword');
+          await chrome.storage.local.remove('persistentPassword');
           chrome.action.setBadgeText({ text: '' });
           sendResponse({ success: true });
           break;
@@ -259,9 +296,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
 
         case 'SET_BADGE':
-          if (message.hasCredentials) {
+          // Only show 'Key' badge if vault is UNLOCKED
+          if (masterPasswordUnlocked && message.hasCredentials) {
             chrome.action.setBadgeText({ text: '🔑', tabId: sender.tab?.id });
+            chrome.action.setBadgeBackgroundColor({ color: '#2196F3', tabId: sender.tab?.id }); // BLUE for match
           } else {
+            // Fallback to global state (by clearing tab-specific badge)
             chrome.action.setBadgeText({ text: '', tabId: sender.tab?.id });
           }
           sendResponse({ success: true });

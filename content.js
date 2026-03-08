@@ -225,15 +225,22 @@ function showSaveCredentialsPrompt() {
 }
 
 async function checkPageCredentials() {
+  detectForms();
   const domain = window.location.hostname.replace('www.', '');
+  
   const res = await chrome.runtime.sendMessage({ type: 'FIND_ALL_ACCOUNTS', domain });
-  if (res.success && res.accounts?.length > 0) {
+  
+  // Show button ONLY if we have accounts AND we found a form on the page
+  if (res.success && res.accounts?.length > 0 && detectedForms.length > 0) {
     hasCredentialsForPage = true;
     accountsForPage = res.accounts;
     accountData = res.accounts[0];
     showAutofillButton();
+    chrome.runtime.sendMessage({ type: 'SET_BADGE', hasCredentials: true });
   } else {
+    hasCredentialsForPage = false;
     removeAutofillButton();
+    chrome.runtime.sendMessage({ type: 'SET_BADGE', hasCredentials: false });
   }
 }
 
@@ -297,7 +304,17 @@ function showNotification(msg) {
 }
 
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
-function observeDOMChanges() { new MutationObserver(() => detectForms()).observe(document.body, { childList: true, subtree: true }); }
+let checkTimeout = null;
+function observeDOMChanges() {
+  const observer = new MutationObserver(() => {
+    if (checkTimeout) clearTimeout(checkTimeout);
+    checkTimeout = setTimeout(() => {
+      checkPageCredentials();
+    }, 500);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 function handleMessage(msg, sender, sendResponse) {
   if (msg.type === 'AUTOFILL_CREDENTIALS') {
     accountData = msg.data;
