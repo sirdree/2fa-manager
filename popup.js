@@ -218,7 +218,7 @@ function renderAccountDetail() {
             </div>
 
             ${code.code ? `
-            <div class="dt-row" style="margin-top:20px;">
+            <div class="dt-row" style="margin-top:12px;">
               <label class="dt-label">2FA Code</label>
               <div class="dt-click-box btn-copy" data-value="${code.code}">
                 <div class="flex-between">
@@ -308,10 +308,24 @@ function updateTimer() {
       if (timerEl) {
         const period = code.period || 30;
         const offset = 94.2 - (code.remainingTime / period) * 94.2;
-        timerEl.querySelector('.timer-prog').style.strokeDashoffset = offset;
-        timerEl.querySelector('.timer-txt').textContent = code.remainingTime;
+        
+        const prog = timerEl.querySelector('.timer-prog');
+        const txt = timerEl.querySelector('.timer-txt');
         const valEl = document.querySelector('.totp-large');
+
+        if (prog) prog.style.strokeDashoffset = offset;
+        if (txt) txt.textContent = code.remainingTime;
         if (valEl) valEl.textContent = formatCode(code.code);
+
+        // Color Logic - Only for Timer elements
+        const isWarning = code.remainingTime <= 10 && code.remainingTime > 5;
+        const isDanger = code.remainingTime <= 5;
+
+        [prog, txt].forEach(el => {
+          if (!el) return;
+          el.classList.toggle('warning', isWarning);
+          el.classList.toggle('danger', isDanger);
+        });
       }
     }
   });

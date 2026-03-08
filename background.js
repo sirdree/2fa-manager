@@ -180,14 +180,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
 
+        case 'GENERATE_TOTP':
+          const singleAcc = unlockedAccounts.find(a => a.id === message.accountId);
+          if (!singleAcc || !singleAcc.secret) { sendResponse({ success: false }); break; }
+          const sRes = await TOTP.generateTOTP(singleAcc.secret, singleAcc.digits, singleAcc.period);
+          sendResponse({ success: true, data: { code: sRes.code, remainingTime: sRes.remainingTime } });
+          break;
+
         case 'GENERATE_ALL_TOTP':
           if (!unlockedAccounts) { sendResponse({ success: false }); break; }
-          sendResponse({ success: true, data: unlockedAccounts.map(a => ({
-            accountId: a.id, issuer: a.issuer, accountName: a.accountName, username: a.username, password: a.password,
-            code: a.secret ? TOTP.generate(a.secret, a.digits, a.period) : null,
-            remainingTime: a.secret ? TOTP.getRemainingTime(a.period) : 0,
-            period: a.period, iconColor: a.iconColor || '#4CAF50'
-          }))});
+          const totpResults = [];
+          for (const a of unlockedAccounts) {
+            let code = null;
+            let remainingTime = 0;
+            if (a.secret) {
+              try {
+                const res = await TOTP.generateTOTP(a.secret, a.digits, a.period);
+                code = res.code;
+                remainingTime = res.remainingTime;
+              } catch (e) { console.error('TOTP Gen Error:', e); }
+            }
+            totpResults.push({
+              accountId: a.id, issuer: a.issuer, accountName: a.accountName, 
+              username: a.username, password: a.password,
+              code, remainingTime, period: a.period, 
+              iconColor: a.iconColor || '#4CAF50'
+            });
+          }
+          sendResponse({ success: true, data: totpResults });
           break;
 
         case 'GET_SETTINGS':
