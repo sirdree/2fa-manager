@@ -37,6 +37,7 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 .lock-form-row { display: flex; gap: 10px; margin-top: 24px; width: 100%; }
 .input-main { width: 100%; padding: 12px 14px; background: var(--bg-card); border: 0.5px solid var(--border); border-radius: 4px; color: white; font-size: 14px; outline: none; display: block; }
 .input-main:focus { border-color: var(--primary); }
+select.input-main { padding-right: 32px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: calc(100% - 12px) center; }
 
 /* 3. Header Bar */
 .nav-header { height: 48px; background: var(--bg-alt); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
@@ -85,9 +86,13 @@ body { display: flex; flex-direction: column; min-width: 760px; height: 520px; b
 
 .dt-row { margin-bottom: 12px; }
 .dt-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; display: block; }
-.dt-click-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-main); padding: 10px 12px; border-radius: 4px; border: 0.5px solid var(--border); cursor: pointer; transition: 0.2s; }
+.dt-click-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-main); padding: 8px 12px; border-radius: 4px; border: 0.5px solid var(--border); cursor: pointer; transition: 0.2s; min-height: 40px; }
 .dt-click-box:hover { border-color: var(--primary); background: var(--bg-hover); }
-.dt-text { font-size: 14px; color: white; word-break: break-all; }
+.dt-text { font-size: 14px; color: white; word-break: break-all; flex: 1; display: flex; align-items: center; }
+
+/* Action buttons inside boxes (Copy/Eye) */
+.box-action-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; width: 20px; height: 20px; flex-shrink: 0; }
+.box-action-btn:hover { color: white; }
 
 /* 6. Sticky Footers */
 .app-footer { 

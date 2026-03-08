@@ -172,21 +172,21 @@ function renderAccountDetail() {
             <div class="dt-row">
               <label class="dt-label">Username</label>
               <div class="dt-click-box btn-copy" data-value="${code.username || ''}">
-                <div class="dt-inner-val">
+                <div class="dt-text">
                   ${SVG.USER}
-                  <span class="dt-val-text">${escapeHtml(code.username || 'Not set')}</span>
+                  ${escapeHtml(code.username || 'Not set')}
                 </div>
-                ${SVG.COPY}
+                <div class="box-action-btn">${SVG.COPY}</div>
               </div>
             </div>
 
             <div class="dt-row">
               <label class="dt-label">Password</label>
               <div class="dt-click-box">
-                <div class="dt-inner-val btn-copy" data-value="${code.password || ''}">
-                  <span class="dt-val-text">${isDetailPasswordVisible ? escapeHtml(code.password) : '••••••••••••'}</span>
+                <div class="dt-text btn-copy" data-value="${code.password || ''}">
+                  ${isDetailPasswordVisible ? escapeHtml(code.password) : '••••••••••••'}
                 </div>
-                <button class="btn-field-action btn-toggle-pass" style="position:static;padding:0;width:32px;justify-content:center;">${SVG.EYE}</button>
+                <button class="box-action-btn btn-toggle-pass">${SVG.EYE}</button>
               </div>
             </div>
 
