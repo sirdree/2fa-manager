@@ -210,9 +210,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true, data: totpResults });
           break;
 
-        case 'GET_SETTINGS':
-          const s = await chrome.storage.local.get(KEYS.SETTINGS);
-          sendResponse({ success: true, settings: s[KEYS.SETTINGS] || DEFAULT_SETTINGS });
+        case 'FIND_ALL_ACCOUNTS':
+          if (!masterPasswordUnlocked) { sendResponse({ success: false, error: 'Locked' }); break; }
+          const domain = message.domain.toLowerCase();
+          const matches = unlockedAccounts.filter(a => (a.issuer || '').toLowerCase().includes(domain));
+          sendResponse({ success: true, accounts: matches });
+          break;
+
+        case 'SAVE_CREDENTIALS':
+          if (!masterPasswordUnlocked) { sendResponse({ success: false, error: 'Locked' }); break; }
+          const { url, username, password } = message.credentials;
+          const host = new URL(url).hostname.replace('www.', '');
+          
+          const newAccount = {
+            id: crypto.randomUUID(),
+            issuer: host,
+            accountName: username,
+            username: username,
+            password: password,
+            secret: '',
+            digits: 6,
+            period: 30,
+            iconColor: '#4CAF50',
+            createdAt: Date.now()
+          };
+          
+          unlockedAccounts.push(newAccount);
+          const sessionPass = (await chrome.storage.session.get('masterPassword')).masterPassword;
+          const encNew = await encryptData(unlockedAccounts, sessionPass);
+          await chrome.storage.local.set({ [KEYS.ACCOUNTS]: encNew });
+          sendResponse({ success: true });
+          break;
+
+        case 'IS_NEVER_SAVE':
+          const nsData = await chrome.storage.local.get('never_save');
+          const nsList = nsData.never_save || [];
+          sendResponse({ success: true, neverSave: nsList.includes(message.domain) });
+          break;
+
+        case 'ADD_TO_NEVER_SAVE':
+          const nsAddData = await chrome.storage.local.get('never_save');
+          const nsAddList = nsAddData.never_save || [];
+          if (!nsAddList.includes(message.domain)) {
+            nsAddList.push(message.domain);
+            await chrome.storage.local.set({ never_save: nsAddList });
+          }
+          sendResponse({ success: true });
+          break;
+
+        case 'SET_BADGE':
+          if (message.hasCredentials) {
+            chrome.action.setBadgeText({ text: '🔑', tabId: sender.tab?.id });
+          } else {
+            chrome.action.setBadgeText({ text: '', tabId: sender.tab?.id });
+          }
+          sendResponse({ success: true });
           break;
 
         case 'UPDATE_SETTINGS':
