@@ -1,4 +1,4 @@
-/* 2FA Manager Options Page - Scoped Theme */
+/* 2FA Manager Options Page - Unified Theme */
 
 :root {
   --primary: #4CAF50;
@@ -101,9 +101,47 @@ body {
   cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s;
 }
 .btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
 .btn-secondary { background: var(--bg-card); color: white; border: 1px solid var(--border); }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-danger:hover { background: rgba(239, 83, 80, 0.1); }
+
+/* About Page Specifics */
+.about-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+}
+
+.about-icon { font-size: 64px; margin-bottom: 16px; display: block; }
+.about-card h3 { font-size: 24px; font-weight: 700; color: white; margin-bottom: 4px; }
+.version { color: var(--primary); font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+.creator { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; }
+
+.about-card .description { max-width: 600px; margin: 0 auto 32px auto; font-size: 15px; color: var(--text-dim); }
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  text-align: left;
+  margin-bottom: 40px;
+  padding: 32px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.feature { display: flex; gap: 16px; align-items: flex-start; }
+.feature-icon { font-size: 24px; flex-shrink: 0; }
+.feature strong { display: block; font-size: 15px; color: white; margin-bottom: 4px; }
+.feature p { font-size: 13px; color: var(--text-dim); line-height: 1.4; }
+
+.about-footer { padding-top: 32px; border-top: 1px solid var(--border); }
+.about-footer p { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+.about-actions { display: flex; gap: 16px; justify-content: center; }
 
 /* Modals */
 .modal { position: fixed; inset: 0; background: rgba(10, 12, 15, 0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
