@@ -235,12 +235,21 @@ function renderAccountDetail() {
             </div>
             ` : ''}
           </section>
+
+          <!-- Delete Confirmation Box -->
+          <div id="delete-confirm-box" class="hidden" style="margin-top: 12px; padding: 12px; background: rgba(239, 83, 80, 0.08); border: 0.5px solid var(--danger); border-radius: var(--radius-sm); text-align: center;">
+            <p style="color: var(--danger); font-size: 12px; font-weight: 600; margin-bottom: 10px;">Permanently delete this account?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+              <button class="btn-footer btn-footer-danger btn-confirm-delete" style="height: 28px; padding: 0 12px; font-size: 11px; min-width: 60px;">YES</button>
+              <button class="btn-footer btn-footer-secondary btn-cancel-delete" style="height: 28px; padding: 0 12px; font-size: 11px; min-width: 60px;">Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
       <footer class="app-footer">
         <button class="btn-footer btn-footer-primary btn-autofill">${SVG.FLASH} Autofill</button>
         <button class="btn-footer btn-footer-secondary btn-edit-account">${SVG.EDIT} Edit</button>
-        <button class="btn-footer btn-footer-danger btn-icon-only">${SVG.TRASH}</button>
+        <button class="btn-footer btn-footer-danger btn-delete-init">${SVG.TRASH}</button>
       </footer>
     </div>
   `;
@@ -261,8 +270,23 @@ function attachDetailListeners() {
   });
   view.querySelector('.btn-autofill')?.addEventListener('click', () => autofillAccount(selectedAccountId));
   view.querySelector('.btn-edit-account')?.addEventListener('click', () => openAccountPage(selectedAccountId));
-  view.querySelector('.btn-delete-account')?.addEventListener('click', () => {
-    if (confirm('Delete this account?')) deleteAccount(selectedAccountId);
+  
+  // Delete Logic
+  const delInitBtn = view.querySelector('.btn-delete-init');
+  const confirmBox = view.querySelector('#delete-confirm-box');
+  
+  delInitBtn?.addEventListener('click', () => {
+    confirmBox?.classList.remove('hidden');
+    // Scroll to bottom to ensure confirmation is visible
+    confirmBox?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  });
+
+  view.querySelector('.btn-cancel-delete')?.addEventListener('click', () => {
+    confirmBox?.classList.add('hidden');
+  });
+
+  view.querySelector('.btn-confirm-delete')?.addEventListener('click', () => {
+    deleteAccount(selectedAccountId);
   });
 }
 
