@@ -40,10 +40,7 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-section="accounts">
-          <span class="icon">📱</span> Accounts
-        </button>
-        <button class="nav-item" data-section="security">
+        <button class="nav-item active" data-section="security">
           <span class="icon">🔒</span> Security
         </button>
         <button class="nav-item" data-section="cloud-sync">
@@ -67,38 +64,8 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Accounts Section -->
-      <section id="accounts-section" class="section active">
-        <div class="section-header">
-          <h2>Accounts</h2>
-          <button id="add-account-btn" class="btn btn-primary">
-            <span class="icon">➕</span> Add Account
-          </button>
-        </div>
-
-        <div class="search-bar">
-          <input
-            type="text"
-            id="search-accounts"
-            class="input"
-            placeholder="Search accounts..."
-          >
-        </div>
-
-        <div id="accounts-list" class="accounts-list">
-          <!-- Accounts will be inserted here -->
-        </div>
-
-        <div id="no-accounts" class="empty-state hidden">
-          <div class="empty-icon">📱</div>
-          <h3>No accounts yet</h3>
-          <p>Add your first 2FA account to get started</p>
-          <button class="btn btn-primary add-first-btn">Add Account</button>
-        </div>
-      </section>
-
       <!-- Security Section -->
-      <section id="security-section" class="section">
+      <section id="security-section" class="section active">
         <div class="section-header">
           <h2>Security</h2>
         </div>
@@ -434,78 +401,6 @@
     </main>
   </div>
 
-  <!-- Account Modal (Unified for Add/Edit) -->
-  <div id="edit-modal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modal-title">Edit Account</h2>
-        <button class="close-modal">×</button>
-      </div>
-
-      <form id="edit-account-form" class="modal-form">
-        <input type="hidden" id="edit-account-id">
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="edit-issuer">Issuer / Service</label>
-            <input type="text" id="edit-issuer" class="input" placeholder="e.g., Google, GitHub" required>
-          </div>
-          <div class="form-group">
-            <label for="edit-name">Account Name / Email</label>
-            <input type="text" id="edit-name" class="input" placeholder="e.g., user@example.com" required>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="edit-username">Autofill Username</label>
-            <input type="text" id="edit-username" class="input" placeholder="Optional">
-          </div>
-          <div class="form-group">
-            <label for="edit-password">Autofill Password</label>
-            <div class="password-input">
-              <input type="password" id="edit-password" class="input" placeholder="Optional">
-              <button type="button" class="toggle-password" style="background:transparent; border:none; color:var(--text-dim); position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer;">👁️</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="edit-secret">2FA Secret Key</label>
-          <div class="password-input">
-            <input type="password" id="edit-secret" class="input" placeholder="Base32 Secret">
-            <button type="button" id="edit-toggle-secret" style="background:transparent; border:none; color:var(--text-dim); position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer;">👁️</button>
-          </div>
-          <small style="color:var(--text-dim); font-size:11px;">Leave empty if not using 2FA</small>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="edit-digits">Digits</label>
-            <select id="edit-digits" class="input">
-              <option value="6">6 digits</option>
-              <option value="8">8 digits</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="edit-period">Refresh (sec)</label>
-            <select id="edit-period" class="input">
-              <option value="30">30 seconds</option>
-              <option value="60">60 seconds</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="edit-form-error" class="error"></div>
-
-        <div class="form-actions" style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-          <button type="button" class="btn btn-secondary cancel-edit">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Account</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Toast -->
   <div id="toast" class="toast hidden">
     <span id="toast-message"></span>
@@ -577,27 +472,6 @@
             <button type="submit" class="btn btn-danger">Delete Everything</button>
           </div>
         </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Single Account Confirmation Modal -->
-  <div id="delete-account-modal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Delete Account</h2>
-        <button class="close-modal">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="warning-icon">🗑️</div>
-        <p class="warning-text">
-          Are you sure you want to delete this account?
-        </p>
-        <p id="delete-account-name" class="warning-description"></p>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary cancel-delete-account">Cancel</button>
-          <button type="button" id="confirm-delete-account" class="btn btn-danger">Delete Account</button>
-        </div>
       </div>
     </div>
   </div>
