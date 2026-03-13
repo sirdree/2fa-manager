@@ -29,28 +29,37 @@ let unlockedAccounts = null;
 let masterPasswordUnlocked = false;
 
 /**
- * Rehydrate State (Restore session after SW suspension or browser restart)
+ * Update the browser action icon based on state
+ */
+function updateActionIcon() {
+  const path = masterPasswordUnlocked ? 'icons/icon-unlocked.png' : 'icons/icon-locked.png';
+  chrome.action.setIcon({ path: path }).catch(() => {
+    // Fallback if specific PNGs aren't found
+    chrome.action.setIcon({ path: 'icons/icon.png' });
+  });
+}
+
+/**
+ * Rehydrate State
  */
 async function rehydrateState() {
   const settingsData = await chrome.storage.local.get(KEYS.SETTINGS);
   const settings = settingsData[KEYS.SETTINGS] || DEFAULT_SETTINGS;
   
-  // Only auto-unlock if auto-lock is DISABLED
   if (!settings.autoLock) {
     const sessionData = await chrome.storage.session.get('masterPassword');
     const persistentPassData = await chrome.storage.local.get('persistentPassword');
     const password = sessionData.masterPassword || persistentPassData.persistentPassword;
     
     if (password) {
-      console.log('Auto-unlocking vault from persisted state...');
       const res = await unlockVault(password);
       if (res.success) {
-        console.log('Vault rehydrated successfully.');
         chrome.action.setBadgeText({ text: '🔓' });
         chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
       }
     }
   }
+  updateActionIcon(); // Initial icon set
 }
 
 // Call rehydration on startup
@@ -144,6 +153,7 @@ async function unlockVault(password) {
 
   chrome.action.setBadgeText({ text: '🔓' });
   chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
+  updateActionIcon();
   return { success: true };
 }
 
@@ -167,6 +177,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           await chrome.storage.session.remove('masterPassword');
           await chrome.storage.local.remove('persistentPassword');
           chrome.action.setBadgeText({ text: '' });
+          updateActionIcon();
           sendResponse({ success: true });
           break;
 

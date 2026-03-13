@@ -1,67 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Create Icons</title>
+  <title>2FA Icon Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #1c2128; color: white; }
+    canvas { border: 1px solid #5f5f87; margin: 10px; background: #000; }
+    .btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
 </head>
 <body>
-  <h1>2FA Extension Icons</h1>
-  <p>Download these images and save them to the icons folder:</p>
-
-  <canvas id="icon16" width="16" height="16"></canvas>
-  <canvas id="icon48" width="48" height="48"></canvas>
-  <canvas id="icon128" width="128" height="128"></canvas>
+  <h2>2FA Icon PNG Generator</h2>
+  <p>Click the button below to generate PNG versions of your icons. After clicking, check your browser console for instructions on how to save them if needed, or simply use the generated images.</p>
+  
+  <button class="btn" onclick="generate()">Generate All Icons</button>
+  
+  <div id="canvases"></div>
 
   <script>
-    function createIcon(canvas, size) {
-      const ctx = canvas.getContext('2d');
+    const sizes = [16, 32, 48, 128];
+    const icons = ['icon-locked.svg', 'icon-unlocked.svg', 'icon-base.svg'];
 
-      // Background gradient
-      const gradient = ctx.createLinearGradient(0, 0, size, size);
-      gradient.addColorStop(0, '#4CAF50');
-      gradient.addColorStop(1, '#388E3C');
+    async function generate() {
+      const container = document.getElementById('canvases');
+      container.innerHTML = '';
 
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, size, size);
-
-      // Lock icon
-      const centerX = size / 2;
-      const centerY = size / 2;
-      const scale = size / 128;
-
-      // Lock body
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.roundRect(centerX - 30 * scale, centerY - 10 * scale, 60 * scale, 50 * scale, 5 * scale);
-      ctx.fill();
-
-      // Lock shackle
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 8 * scale;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY - 15 * scale, 20 * scale, Math.PI, 0, false);
-      ctx.stroke();
-
-      // Keyhole
-      ctx.fillStyle = '#4CAF50';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY + 10 * scale, 8 * scale, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillRect(centerX - 3 * scale, centerY + 10 * scale, 6 * scale, 15 * scale);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = `icon${size}.png`;
-      link.href = canvas.toDataURL();
-      link.textContent = `Download icon${size}.png`;
-      document.body.appendChild(link);
-      document.body.appendChild(document.createElement('br'));
+      for (const icon of icons) {
+        for (const size of sizes) {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          container.appendChild(canvas);
+          const ctx = canvas.getContext('2d');
+          
+          const img = new Image();
+          img.src = 'icons/' + icon;
+          await new Promise(r => img.onload = r);
+          
+          ctx.drawImage(img, 0, 0, size, size);
+          console.log(`Generated ${icon} at ${size}px`);
+        }
+      }
+      alert('Icons generated on screen! You can right-click and "Save Image As" to replace the icons in your folder.');
     }
-
-    createIcon(document.getElementById('icon16'), 16);
-    createIcon(document.getElementById('icon48'), 48);
-    createIcon(document.getElementById('icon128'), 128);
   </script>
 </body>
 </html>
